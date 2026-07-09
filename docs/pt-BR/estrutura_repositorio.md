@@ -21,7 +21,7 @@ Este documento define onde cada tipo de arquivo deve ficar e o que nao deve ser 
 | --- | --- | --- |
 | `data/` | Area local para arquivos reais usados em importacoes manuais. | Ignorado, exceto `.gitkeep`. |
 | `storage/` | Arquivos gerados, uploads, planilhas exportadas e temporarios da aplicacao. | Ignorado, exceto `.gitkeep`. |
-| `backups/` ou `/backups/inplant_finance` | Backups de banco e arquivos. | Ignorado. |
+| `backups/` ou `/backups/construction_finance_assistant` | Backups de banco e arquivos. | Ignorado. |
 | `media/`, `uploads/`, `comprovantes/`, `ofx/` | Arquivos enviados por usuarios/bot. | Ignorado. |
 
 ## O que pode ficar no Git

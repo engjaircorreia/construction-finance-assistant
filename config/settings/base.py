@@ -106,8 +106,8 @@ ASGI_APPLICATION = "config.asgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("POSTGRES_DB", "inplant"),
-        "USER": env("POSTGRES_USER", "inplant"),
+        "NAME": env("POSTGRES_DB", "construction_finance"),
+        "USER": env("POSTGRES_USER", "construction_finance"),
         "PASSWORD": env("POSTGRES_PASSWORD", "change-me"),
         "HOST": env("POSTGRES_HOST", "db"),
         "PORT": env("POSTGRES_PORT", "5432"),

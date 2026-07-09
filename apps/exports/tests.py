@@ -46,7 +46,7 @@ class PaymentSpreadsheetExportTests(TestCase):
         self.tempdir = TemporaryDirectory()
         self.override = override_settings(
             MEDIA_ROOT=Path(self.tempdir.name),
-            DEFAULT_PAYER="In Plant Engenharia",
+            DEFAULT_PAYER="Company",
             DEFAULT_BANK_ACCOUNT="Banco Principal",
         )
         self.override.enable()
@@ -109,7 +109,7 @@ class PaymentSpreadsheetExportTests(TestCase):
         self.assertEqual(worksheet.cell(row=2, column=7).value, "NF-123")
         self.assertEqual(worksheet.cell(row=2, column=8).value, "Materiais")
         self.assertEqual(worksheet.cell(row=2, column=9).value, "PIX")
-        self.assertEqual(worksheet.cell(row=2, column=10).value, "In Plant Engenharia")
+        self.assertEqual(worksheet.cell(row=2, column=10).value, "Company")
         self.assertEqual(worksheet.cell(row=2, column=11).value, "Banco Principal")
         self.assertEqual(worksheet.cell(row=2, column=12).value, "Project")
         self.assertEqual(worksheet.cell(row=2, column=13).value, "Sertãozinho")

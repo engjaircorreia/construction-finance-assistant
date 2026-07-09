@@ -5,7 +5,7 @@ umask 077
 
 PROJECT_DIR="${PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.shared-vps.yml}"
-BACKUP_ROOT="${BACKUP_ROOT:-/backups/inplant_finance}"
+BACKUP_ROOT="${BACKUP_ROOT:-/backups/construction_finance_assistant}"
 DAILY_RETENTION_DAYS="${DAILY_RETENTION_DAYS:-14}"
 MONTHLY_RETENTION_DAYS="${MONTHLY_RETENTION_DAYS:-180}"
 RUN_RETENTION="${RUN_RETENTION:-1}"
@@ -24,7 +24,7 @@ Variaveis opcionais:
   RUN_RETENTION            1 para aplicar retencao, 0 para nao aplicar
 
 Exemplo:
-  BACKUP_ROOT=/backups/inplant_finance deploy/backup.sh
+  BACKUP_ROOT=/backups/construction_finance_assistant deploy/backup.sh
 EOF
 }
 

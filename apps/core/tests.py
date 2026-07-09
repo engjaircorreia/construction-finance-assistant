@@ -68,8 +68,8 @@ class ProjectConfigurationTests(SimpleTestCase):
 
     def test_production_deploy_files_exist_and_do_not_use_example_env(self):
         compose = settings.PROJECT_ROOT / "docker-compose.prod.yml"
-        nginx_http = settings.PROJECT_ROOT / "deploy/nginx/conf.d/inplant.http.conf"
-        nginx_https = settings.PROJECT_ROOT / "deploy/nginx/conf.d/inplant.https.conf.example"
+        nginx_http = settings.PROJECT_ROOT / "deploy/nginx/conf.d/app.http.conf"
+        nginx_https = settings.PROJECT_ROOT / "deploy/nginx/conf.d/app.https.conf.example"
         production_doc = settings.PROJECT_ROOT / "docs/production.md"
 
         self.assertTrue(compose.exists())
@@ -112,7 +112,7 @@ class ProjectConfigurationTests(SimpleTestCase):
         backup_script = (settings.PROJECT_ROOT / "deploy/backup.sh").read_text(encoding="utf-8")
 
         self.assertIn("BACKUP_ROOT", backup_script)
-        self.assertIn("/backups/inplant_finance", backup_script)
+        self.assertIn("/backups/construction_finance_assistant", backup_script)
         self.assertIn("DAILY_RETENTION_DAYS", backup_script)
         self.assertIn("MONTHLY_RETENTION_DAYS", backup_script)
         self.assertIn("pg_dump", backup_script)
@@ -137,11 +137,11 @@ class ProjectConfigurationTests(SimpleTestCase):
 
         for expected in (
             "deploy/backup.sh",
-            "/backups/inplant_finance",
+            "/backups/construction_finance_assistant",
             "cron",
             "Restore In A Controlled Environment",
             "Local Restore Simulation",
-            "COMPOSE_PROJECT_NAME=inplant_restore_test",
+            "COMPOSE_PROJECT_NAME=construction_finance_restore_test",
             "pg_dump",
             "psql",
             "storage",
@@ -158,8 +158,8 @@ class ProjectConfigurationTests(SimpleTestCase):
 
     def test_nginx_does_not_publish_private_media_files(self):
         for relative_path in (
-            "deploy/nginx/conf.d/inplant.http.conf",
-            "deploy/nginx/conf.d/inplant.https.conf.example",
+            "deploy/nginx/conf.d/app.http.conf",
+            "deploy/nginx/conf.d/app.https.conf.example",
         ):
             with self.subTest(path=relative_path):
                 nginx_config = (settings.PROJECT_ROOT / relative_path).read_text(encoding="utf-8")

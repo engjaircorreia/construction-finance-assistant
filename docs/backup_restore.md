@@ -14,13 +14,13 @@ Use this workflow on the VPS. Do not store backups inside the repository and do 
 Default location:
 
 ```bash
-/backups/inplant_finance
+/backups/construction_finance_assistant
 ```
 
 The script creates this structure:
 
 ```text
-/backups/inplant_finance/
+/backups/construction_finance_assistant/
   daily/
     db/
     storage/
@@ -34,15 +34,15 @@ The script creates this structure:
 On the VPS:
 
 ```bash
-cd ~/apps/inplantengenharia_finance
+cd ~/apps/construction-finance-assistant
 deploy/backup.sh
 ```
 
 To use another compose file or destination:
 
 ```bash
-cd ~/apps/inplantengenharia_finance
-COMPOSE_FILE=docker-compose.shared-vps.yml BACKUP_ROOT=/backups/inplant_finance deploy/backup.sh
+cd ~/apps/construction-finance-assistant
+COMPOSE_FILE=docker-compose.shared-vps.yml BACKUP_ROOT=/backups/construction_finance_assistant deploy/backup.sh
 ```
 
 The script:
@@ -61,15 +61,15 @@ The script:
 Example: run every day at 02:15:
 
 ```cron
-15 2 * * * cd /home/deploy/apps/inplantengenharia_finance && /home/deploy/apps/inplantengenharia_finance/deploy/backup.sh >> /var/log/inplant_finance_backup.log 2>&1
+15 2 * * * cd /home/deploy/apps/construction-finance-assistant && /home/deploy/apps/construction-finance-assistant/deploy/backup.sh >> /var/log/construction_finance_assistant_backup.log 2>&1
 ```
 
-Before adding the cron job, run the script manually and confirm that files were created in `/backups/inplant_finance`.
+Before adding the cron job, run the script manually and confirm that files were created in `/backups/construction_finance_assistant`.
 
 ## List Backups
 
 ```bash
-find /backups/inplant_finance -maxdepth 4 -type f -printf '%TY-%Tm-%Td %TH:%TM %p
+find /backups/construction_finance_assistant -maxdepth 4 -type f -printf '%TY-%Tm-%Td %TH:%TM %p
 ' | sort
 ```
 
@@ -78,7 +78,7 @@ find /backups/inplant_finance -maxdepth 4 -type f -printf '%TY-%Tm-%Td %TH:%TM %
 Example:
 
 ```bash
-rsync -av deploy@srv1772642:/backups/inplant_finance/ ./backups/inplant_finance/
+rsync -av deploy@srv1772642:/backups/construction_finance_assistant/ ./backups/construction_finance_assistant/
 ```
 
 Do not place the local backup folder inside the repository.
@@ -102,21 +102,21 @@ Use a separate project copy or, at minimum, a different `COMPOSE_PROJECT_NAME` s
 
 ```bash
 cd ~/tmp
-git clone git@github.com:codemapstartup/inplantengenharia_finance.git inplant_restore_test
-cd inplant_restore_test
+git clone git@github.com:engjaircorreia/construction-finance-assistant.git construction_finance_restore_test
+cd construction_finance_restore_test
 cp .env.example .env
 ```
 
 Use local values and no real secrets:
 
 ```dotenv
-COMPOSE_PROJECT_NAME=inplant_restore_test
+COMPOSE_PROJECT_NAME=construction_finance_restore_test
 DJANGO_SETTINGS_MODULE=config.settings.development
 DJANGO_DEBUG=True
 DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
 DJANGO_CSRF_TRUSTED_ORIGINS=http://localhost:8000
-POSTGRES_DB=inplant
-POSTGRES_USER=inplant
+POSTGRES_DB=construction_finance
+POSTGRES_USER=construction_finance
 POSTGRES_PASSWORD=local-test-password
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
@@ -134,24 +134,24 @@ docker compose exec web python manage.py migrate
 Copy backups outside the repository:
 
 ```bash
-mkdir -p ~/backups/inplant_restore_test
-rsync -av deploy@srv1772642:/backups/inplant_finance/ ~/backups/inplant_restore_test/
+mkdir -p ~/backups/construction_finance_restore_test
+rsync -av deploy@srv1772642:/backups/construction_finance_assistant/ ~/backups/construction_finance_restore_test/
 ```
 
 Pick matching timestamped files:
 
 ```text
-~/backups/inplant_restore_test/daily/db/postgres_YYYYMMDD_HHMMSS.sql.gz
-~/backups/inplant_restore_test/daily/storage/storage_YYYYMMDD_HHMMSS.tar.gz
+~/backups/construction_finance_restore_test/daily/db/postgres_YYYYMMDD_HHMMSS.sql.gz
+~/backups/construction_finance_restore_test/daily/storage/storage_YYYYMMDD_HHMMSS.tar.gz
 ```
 
 Restore database first, then files:
 
 ```bash
-gunzip -c ~/backups/inplant_restore_test/daily/db/postgres_YYYYMMDD_HHMMSS.sql.gz   | docker compose exec -T db psql -U inplant -d inplant
+gunzip -c ~/backups/construction_finance_restore_test/daily/db/postgres_YYYYMMDD_HHMMSS.sql.gz   | docker compose exec -T db psql -U construction_finance -d construction_finance
 
 docker compose exec -T web sh -c 'rm -rf /app/storage/*'
-cat ~/backups/inplant_restore_test/daily/storage/storage_YYYYMMDD_HHMMSS.tar.gz   | docker compose exec -T web tar xzf - -C /app
+cat ~/backups/construction_finance_restore_test/daily/storage/storage_YYYYMMDD_HHMMSS.tar.gz   | docker compose exec -T web tar xzf - -C /app
 ```
 
 Check the restore:
@@ -172,8 +172,8 @@ docker compose down -v
 ## Restore Database In Local/Staging
 
 ```bash
-cd ~/apps/inplantengenharia_finance
-gunzip -c /safe/path/postgres_YYYYMMDD_HHMMSS.sql.gz   | docker compose exec -T db psql -U inplant -d inplant
+cd ~/apps/construction-finance-assistant
+gunzip -c /safe/path/postgres_YYYYMMDD_HHMMSS.sql.gz   | docker compose exec -T db psql -U construction_finance -d construction_finance
 ```
 
 If the local database is not empty, recreate it in the test environment before restoring. Do not do this in production without a maintenance window and another recently validated backup.
@@ -181,7 +181,7 @@ If the local database is not empty, recreate it in the test environment before r
 ## Restore Files In Local/Staging
 
 ```bash
-cd ~/apps/inplantengenharia_finance
+cd ~/apps/construction-finance-assistant
 docker compose exec -T web sh -c 'rm -rf /app/storage/*'
 cat /safe/path/storage_YYYYMMDD_HHMMSS.tar.gz   | docker compose exec -T web tar xzf - -C /app
 ```

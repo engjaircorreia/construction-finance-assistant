@@ -29,7 +29,7 @@ class MainRegressionTests(TestCase):
         self.override = override_settings(
             MEDIA_ROOT=Path(self.tempdir.name),
             TELEGRAM_ALLOWED_USER_IDS=[],
-            DEFAULT_PAYER="In Plant Engenharia",
+            DEFAULT_PAYER="Company",
             DEFAULT_BANK_ACCOUNT="Banco Principal",
         )
         self.override.enable()

@@ -21,8 +21,8 @@ Recommended path:
 ```bash
 mkdir -p ~/apps
 cd ~/apps
-git clone git@github-inplant:codemapstartup/inplantengenharia_finance.git
-cd inplantengenharia_finance
+git clone git@github.com:engjaircorreia/construction-finance-assistant.git
+cd construction-finance-assistant
 ```
 
 If you prefer another directory, adjust the commands below.
@@ -34,15 +34,15 @@ Do not copy local `.env` to GitHub.
 Create a real `.env` directly on the VPS:
 
 ```env
-COMPOSE_PROJECT_NAME=inplant_finance
+COMPOSE_PROJECT_NAME=construction_finance_assistant
 DJANGO_SETTINGS_MODULE=config.settings.production
 DJANGO_SECRET_KEY=replace-with-a-long-random-secret
 DJANGO_DEBUG=False
 DJANGO_ALLOWED_HOSTS=finance.example.com
 DJANGO_CSRF_TRUSTED_ORIGINS=https://finance.example.com
 DJANGO_ADMIN_URL=private-admin-path/
-POSTGRES_DB=inplant
-POSTGRES_USER=inplant
+POSTGRES_DB=construction_finance
+POSTGRES_USER=construction_finance
 POSTGRES_PASSWORD=replace-with-a-strong-password
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
@@ -142,7 +142,7 @@ AuthorizedTelegramUser.objects.create(user=partner, telegram_user_id=987654321, 
 ## 8. Future Updates
 
 ```bash
-cd ~/apps/inplantengenharia_finance
+cd ~/apps/construction-finance-assistant
 git pull
 docker compose -f docker-compose.shared-vps.yml build
 docker compose -f docker-compose.shared-vps.yml up -d
@@ -155,19 +155,19 @@ docker compose -f docker-compose.shared-vps.yml exec web python manage.py collec
 Create backups outside the repository:
 
 ```bash
-mkdir -p /backups/inplant_finance
+mkdir -p /backups/construction_finance_assistant
 ```
 
 Run:
 
 ```bash
-COMPOSE_FILE=docker-compose.shared-vps.yml BACKUP_ROOT=/backups/inplant_finance deploy/backup.sh
+COMPOSE_FILE=docker-compose.shared-vps.yml BACKUP_ROOT=/backups/construction_finance_assistant deploy/backup.sh
 ```
 
 ## Important Notes
 
 - Do not use `docker-compose.prod.yml` if it tries to start another Nginx on ports `80` and `443`.
-- Use `COMPOSE_PROJECT_NAME=inplant_finance` so containers and volumes do not mix with another app.
+- Use `COMPOSE_PROJECT_NAME=construction_finance_assistant` so containers and volumes do not mix with another app.
 - Database and Redis have no public ports.
 - Only local port `8010` is exposed on the VPS.
 - The public domain should go through the existing Nginx.

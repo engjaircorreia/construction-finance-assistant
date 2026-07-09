@@ -1,14 +1,14 @@
-# Inplant Engenharia - Payment Assistant
+# Construction Finance Assistant
 
-Internal finance application for recording expenses from Telegram receipts, reviewing payment entries, reconciling them against bank statements, and generating accounting import spreadsheets.
+A Django-based finance assistant for capturing payment records from Telegram receipts, reviewing expenses, reconciling OFX bank statements, and generating accounting spreadsheets.
 
 ## Clone The Project
 
 Start by cloning the repository and entering the project directory:
 
 ```bash
-git clone git@github-inplant:codemapstartup/inplantengenharia_finance.git
-cd inplantengenharia_finance
+git clone git@github.com:engjaircorreia/construction-finance-assistant.git
+cd construction-finance-assistant
 ```
 
 ## Stack

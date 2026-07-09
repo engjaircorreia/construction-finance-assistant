@@ -22,7 +22,7 @@ This document defines where each type of file should live and what must not be c
 | --- | --- | --- |
 | `date/` | Local area for real files used in manual imports. | Ignored except `.gitkeep`. |
 | `storage/` | Generated files, uploads, exported spreadsheets, and temporary app files. | Ignored except `.gitkeep`. |
-| `backups/` or `/backups/inplant_finance` | Database and file backups. | Ignored. |
+| `backups/` or `/backups/construction_finance_assistant` | Database and file backups. | Ignored. |
 | `media/`, `uploads/`, `receipts/`, `ofx/` | Files uploaded by users/bot. | Ignored. |
 
 ## What Can Be Committed

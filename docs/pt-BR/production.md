@@ -7,8 +7,8 @@ Substitua `sistema.example.com` pelo domínio real antes de subir.
 ## Arquivos de produção
 
 - `docker-compose.prod.yml`: serviços de produção.
-- `deploy/nginx/conf.d/inplant.http.conf`: Nginx em HTTP para primeiro boot e emissão do certificado.
-- `deploy/nginx/conf.d/inplant.https.conf.example`: Nginx HTTPS para usar depois do Certbot.
+- `deploy/nginx/conf.d/app.http.conf`: Nginx em HTTP para primeiro boot e emissão do certificado.
+- `deploy/nginx/conf.d/app.https.conf.example`: Nginx HTTPS para usar depois do Certbot.
 - `.env`: deve ser criado direto na VPS e nunca versionado.
 
 ## Checklist do `.env` na VPS
@@ -30,8 +30,8 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://sistema.example.com
 DJANGO_ADMIN_URL=caminho-privado-admin/
 DJANGO_TIME_ZONE=America/Fortaleza
 
-POSTGRES_DB=inplant
-POSTGRES_USER=inplant
+POSTGRES_DB=construction_finance
+POSTGRES_USER=construction_finance
 POSTGRES_PASSWORD=gere-uma-senha-forte
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
@@ -66,7 +66,7 @@ Checklist:
 
 ## Primeiro deploy
 
-Edite `deploy/nginx/conf.d/inplant.http.conf` e troque `sistema.example.com` pelo domínio real.
+Edite `deploy/nginx/conf.d/app.http.conf` e troque `sistema.example.com` pelo domínio real.
 
 Suba os serviços em HTTP:
 
@@ -129,13 +129,13 @@ docker compose -f docker-compose.prod.yml run --rm certbot certonly \
 Depois:
 
 ```bash
-cp deploy/nginx/conf.d/inplant.https.conf.example deploy/nginx/conf.d/inplant.https.conf
+cp deploy/nginx/conf.d/app.https.conf.example deploy/nginx/conf.d/app.https.conf
 ```
 
-Edite `inplant.https.conf` e troque `sistema.example.com` pelo domínio real. Remova ou renomeie o arquivo HTTP inicial para evitar conflito:
+Edite `app.https.conf` e troque `sistema.example.com` pelo domínio real. Remova ou renomeie o arquivo HTTP inicial para evitar conflito:
 
 ```bash
-mv deploy/nginx/conf.d/inplant.http.conf deploy/nginx/conf.d/inplant.http.conf.disabled
+mv deploy/nginx/conf.d/app.http.conf deploy/nginx/conf.d/app.http.conf.disabled
 docker compose -f docker-compose.prod.yml restart nginx
 ```
 
@@ -171,22 +171,22 @@ docker compose -f docker-compose.prod.yml ps
 
 ## Backups
 
-Crie uma pasta fora do repositório ou use `/backups/inplant`:
+Crie uma pasta fora do repositório ou use `/backups/construction_finance`:
 
 ```bash
-mkdir -p /backups/inplant
+mkdir -p /backups/construction_finance
 ```
 
 Para o deploy compartilhado atual, prefira o script:
 
 ```bash
-BACKUP_ROOT=/backups/inplant_finance COMPOSE_FILE=docker-compose.shared-vps.yml deploy/backup.sh
+BACKUP_ROOT=/backups/construction_finance_assistant COMPOSE_FILE=docker-compose.shared-vps.yml deploy/backup.sh
 ```
 
 Para este `docker-compose.prod.yml`, use:
 
 ```bash
-BACKUP_ROOT=/backups/inplant COMPOSE_FILE=docker-compose.prod.yml deploy/backup.sh
+BACKUP_ROOT=/backups/construction_finance COMPOSE_FILE=docker-compose.prod.yml deploy/backup.sh
 ```
 
 Veja tambem `docs/backup_restore.md` para restore e cron.
@@ -197,22 +197,22 @@ Backup do banco:
 docker compose -f docker-compose.prod.yml exec -T db pg_dump \
   -U "$POSTGRES_USER" \
   -d "$POSTGRES_DB" \
-  > /backups/inplant/db_$(date +%Y%m%d_%H%M%S).sql
+  > /backups/construction_finance/db_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 Se as variáveis do shell da VPS não estiverem carregadas, use os nomes configurados no `.env`:
 
 ```bash
-docker compose -f docker-compose.prod.yml exec -T db pg_dump -U inplant -d inplant \
-  > /backups/inplant/db_$(date +%Y%m%d_%H%M%S).sql
+docker compose -f docker-compose.prod.yml exec -T db pg_dump -U construction_finance -d construction_finance \
+  > /backups/construction_finance/db_$(date +%Y%m%d_%H%M%S).sql
 ```
 
 Backup dos arquivos gerados, uploads, comprovantes e planilhas:
 
 ```bash
 docker run --rm \
-  -v inplantengenharia_app_storage:/app/storage:ro \
-  -v /backups/inplant:/backup \
+  -v construction_finance_assistant_app_storage:/app/storage:ro \
+  -v /backups/construction_finance:/backup \
   alpine tar czf /backup/storage_$(date +%Y%m%d_%H%M%S).tar.gz -C /app storage
 ```
 
@@ -220,8 +220,8 @@ Backup dos certificados:
 
 ```bash
 docker run --rm \
-  -v inplantengenharia_certbot_conf:/etc/letsencrypt:ro \
-  -v /backups/inplant:/backup \
+  -v construction_finance_assistant_certbot_conf:/etc/letsencrypt:ro \
+  -v /backups/construction_finance:/backup \
   alpine tar czf /backup/letsencrypt_$(date +%Y%m%d_%H%M%S).tar.gz -C /etc letsencrypt
 ```
 

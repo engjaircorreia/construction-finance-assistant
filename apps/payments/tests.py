@@ -188,7 +188,7 @@ class PaymentExtractionTests(TestCase):
             "Receipt de Payment Pix Amount: R$ 2.000,00 Realized em: 23/06/2026 "
             "Solicitante: TIAGO MARCELO ARAUJO DE OLIVEIRA "
             "Name do destinatário: Anita Jakeline Alves Fields "
-            "Name do pagador: Inplant Engenharia E Planejamento Ltda"
+            "Name do pagador: Example Construction Company Ltd"
         )
 
         extraction = extract_from_text(text, source_kind=UploadedFile.Kind.PDF)
@@ -272,7 +272,7 @@ class PaymentExtractionTests(TestCase):
             "Solicitante: TIAGO MARCELO ARAUJO DE OLIVEIRA "
             "Name do destinatário: IVALDO MARTINS DE FREITAS "
             "CPF do destinatário: ***.425.464-** "
-            "Name do pagador: Inplant Engenharia E Planejamento Ltda"
+            "Name do pagador: Example Construction Company Ltd"
         )
 
         extraction = extract_from_text(text, source_kind=UploadedFile.Kind.PDF)

@@ -1,6 +1,6 @@
 # Documentacao do projeto
 
-Este diretorio concentra a documentacao tecnica e operacional do sistema financeiro da Inplant Engenharia.
+Este diretorio concentra a documentacao tecnica e operacional do sistema financeiro da Construction Finance Assistant.
 
 ## Operacao
 

@@ -1,6 +1,6 @@
 # Project Documentation
 
-This directory contains the technical and operational documentation for Inplant Engenharia's finance system.
+This directory contains the technical and operational documentation for Construction Finance Assistant.
 
 ## Operations
 

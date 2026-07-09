@@ -7,8 +7,8 @@ Replace `sistema.example.com` with the real domain before starting.
 ## Production Files
 
 - `docker-compose.prod.yml`: production services.
-- `deploy/nginx/conf.d/inplant.http.conf`: initial HTTP Nginx config for first boot and certificate issuance.
-- `deploy/nginx/conf.d/inplant.https.conf.example`: HTTPS example.
+- `deploy/nginx/conf.d/app.http.conf`: initial HTTP Nginx config for first boot and certificate issuance.
+- `deploy/nginx/conf.d/app.https.conf.example`: HTTPS example.
 - `deploy/backup.sh`: database and storage backup script.
 
 ## Production Environment
@@ -25,8 +25,8 @@ DJANGO_ALLOWED_HOSTS=sistema.example.com
 DJANGO_CSRF_TRUSTED_ORIGINS=https://sistema.example.com
 DJANGO_ADMIN_URL=private-admin-path/
 DJANGO_TIME_ZONE=America/Fortaleza
-POSTGRES_DB=inplant
-POSTGRES_USER=inplant
+POSTGRES_DB=construction_finance
+POSTGRES_USER=construction_finance
 POSTGRES_PASSWORD=replace-with-a-strong-password
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
@@ -51,7 +51,7 @@ Security rules:
 
 ## First Boot In HTTP
 
-Edit `deploy/nginx/conf.d/inplant.http.conf` and replace `sistema.example.com` with the real domain.
+Edit `deploy/nginx/conf.d/app.http.conf` and replace `sistema.example.com` with the real domain.
 
 Start services:
 
@@ -96,7 +96,7 @@ Keep `TELEGRAM_ALLOWED_USER_IDS` in `.env` as a second configuration layer.
 Use Certbot or the VPS certificate workflow. After issuing the certificate, configure HTTPS using the example file:
 
 ```bash
-cp deploy/nginx/conf.d/inplant.https.conf.example deploy/nginx/conf.d/inplant.https.conf
+cp deploy/nginx/conf.d/app.https.conf.example deploy/nginx/conf.d/app.https.conf
 ```
 
 Edit the domain and certificate paths, then reload Nginx/container as appropriate.
@@ -112,7 +112,7 @@ Add renewal to cron according to the VPS setup.
 ## Update Routine
 
 ```bash
-cd ~/apps/inplantengenharia_finance
+cd ~/apps/construction-finance-assistant
 git pull
 docker compose -f docker-compose.prod.yml build
 docker compose -f docker-compose.prod.yml up -d
@@ -122,7 +122,7 @@ docker compose -f docker-compose.prod.yml exec web python manage.py collectstati
 
 ## Backups
 
-Create backups outside the repository, for example `/backups/inplant` or `/backups/inplant_finance`.
+Create backups outside the repository, for example `/backups/construction_finance` or `/backups/construction_finance_assistant`.
 
 Use:
 

@@ -20,8 +20,8 @@ Na VPS:
 
 ```bash
 cd /opt
-git clone git@github.com:codemapstartup/inplantengenharia_finance.git
-cd inplantengenharia_finance
+git clone git@github.com:engjaircorreia/construction-finance-assistant.git
+cd construction-finance-assistant
 ```
 
 Se preferir outro diretório, ajuste os comandos seguintes.
@@ -37,7 +37,7 @@ nano .env
 Modelo:
 
 ```dotenv
-COMPOSE_PROJECT_NAME=inplant_finance
+COMPOSE_PROJECT_NAME=construction_finance_assistant
 APP_HOST_PORT=8010
 
 DJANGO_SETTINGS_MODULE=config.settings.production
@@ -48,8 +48,8 @@ DJANGO_CSRF_TRUSTED_ORIGINS=https://financeiro.seudominio.com.br
 DJANGO_ADMIN_URL=caminho-privado-admin/
 DJANGO_TIME_ZONE=America/Fortaleza
 
-POSTGRES_DB=inplant
-POSTGRES_USER=inplant
+POSTGRES_DB=construction_finance
+POSTGRES_USER=construction_finance
 POSTGRES_PASSWORD=gere-uma-senha-forte
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
@@ -177,7 +177,7 @@ AuthorizedTelegramUser.objects.create(telegram_user_id=987654321, name="Sócio",
 ## 8. Atualizações futuras
 
 ```bash
-cd /opt/inplantengenharia_finance
+cd /opt/construction-finance-assistant
 git pull
 docker compose -f docker-compose.shared-vps.yml up -d --build
 docker compose -f docker-compose.shared-vps.yml exec web python manage.py migrate
@@ -189,7 +189,7 @@ docker compose -f docker-compose.shared-vps.yml exec web python manage.py collec
 Crie backups fora do repositório:
 
 ```bash
-mkdir -p /backups/inplant_finance
+mkdir -p /backups/construction_finance_assistant
 ```
 
 Backup manual recomendado:
@@ -205,7 +205,7 @@ Detalhes de restore e cron ficam em `docs/backup_restore.md`.
 ## Cuidados importantes
 
 - Não use `docker-compose.prod.yml` se ele tentar subir outro Nginx nas portas `80` e `443`.
-- Use `COMPOSE_PROJECT_NAME=inplant_finance` para os containers/volumes não se misturarem com outro app.
+- Use `COMPOSE_PROJECT_NAME=construction_finance_assistant` para os containers/volumes não se misturarem com outro app.
 - Banco e Redis ficam sem porta pública.
 - Só a porta `8010` local fica acessível na própria VPS.
 - O domínio público deve passar pelo Nginx existente.
