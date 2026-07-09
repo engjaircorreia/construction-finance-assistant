@@ -1,0 +1,30 @@
+{% extends "core/base.html" %}
+
+{% block title %}New project/cost center{% endblock %}
+
+{% block content %}
+  <h1>New project/cost center</h1>
+
+  <form class="form-grid" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+    {% if draft_id %}<input type="hidden" name="draft" value="{{ draft_id }}">{% endif %}
+
+    {% if form.non_field_errors %}
+      <div class="notice danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    {% for field in form %}
+      <label>
+        {{ field.label }}
+        {{ field }}
+        {% for error in field.errors %}<span class="error">{{ error }}</span>{% endfor %}
+      </label>
+    {% endfor %}
+
+    <div class="form-actions span-2">
+      <button class="primary" type="submit">Save project</button>
+      <a class="button" href="{{ next_url }}">Back</a>
+    </div>
+  </form>
+{% endblock %}

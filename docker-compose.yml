@@ -1,0 +1,81 @@
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    env_file:
+      - path: .env.example
+      - path: .env
+        required: false
+    volumes:
+      - .:/app
+      - app_storage:/app/storage
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  worker:
+    build: .
+    command: celery -A config worker --loglevel=info
+    env_file:
+      - path: .env.example
+      - path: .env
+        required: false
+    volumes:
+      - .:/app
+      - app_storage:/app/storage
+    depends_on:
+      - db
+      - redis
+
+  bot:
+    build: .
+    command: python manage.py run_telegram_bot
+    env_file:
+      - path: .env.example
+      - path: .env
+        required: false
+    volumes:
+      - .:/app
+      - app_storage:/app/storage
+    depends_on:
+      - db
+      - redis
+
+  beat:
+    build: .
+    command: celery -A config beat --loglevel=info
+    env_file:
+      - path: .env.example
+      - path: .env
+        required: false
+    volumes:
+      - .:/app
+      - app_storage:/app/storage
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - path: .env.example
+      - path: .env
+        required: false
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+
+volumes:
+  postgres_data:
+  redis_data:
+  app_storage:

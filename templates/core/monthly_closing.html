@@ -1,0 +1,292 @@
+{% extends "core/base.html" %}
+
+{% block title %}Monthly Close{% endblock %}
+
+{% block content %}
+  <h1>Monthly close</h1>
+
+  <form class="filters" method="get">
+    <label>
+      Month
+      <select name="mes">
+        {% for value, label in month_choices %}
+          <option value="{{ value }}"{% if value == selected_month %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Year
+      <select name="ano">
+        {% for value in year_choices %}
+          <option value="{{ value }}"{% if value == selected_year %} selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="primary" type="submit">Update</button>
+  </form>
+
+  <h2>Period summary</h2>
+  <p>{{ summary.period_start|date:"d/m/Y" }} to {{ summary.period_end|date:"d/m/Y" }}</p>
+
+  <h2>Operational checklist</h2>
+  <div class="table-scroll">
+    <table class="data-table checklist-table">
+      <colgroup>
+        <col class="col-stage">
+        <col class="col-status">
+        <col class="col-count">
+        <col>
+        <col class="col-action">
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Step</th>
+          <th>Status</th>
+          <th>Qty.</th>
+          <th>Detail</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in checklist %}
+          <tr>
+            <td>{{ item.label }}</td>
+            <td><span class="badge {{ item.status }}">{{ item.status_label }}</span></td>
+            <td>{{ item.count }}</td>
+            <td>{{ item.detail }}</td>
+            <td class="action-cell">
+              {% if item.link %}
+                <a class="button compact-button" href="{{ item.link }}">{{ item.action_label }}</a>
+              {% else %}
+                -
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if can_generate_spreadsheets %}
+    <form class="actions" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="mes" value="{{ selected_month }}">
+      <input type="hidden" name="ano" value="{{ selected_year }}">
+      <button class="primary" type="submit">Generate spreadsheets</button>
+    </form>
+  {% else %}
+    <div class="notice warning">Resolve blocking pending items before generating spreadsheets.</div>
+    <div class="actions">
+      <button class="primary" type="button" disabled>Generate spreadsheets</button>
+    </div>
+  {% endif %}
+
+  <div class="summary-grid">
+    <div class="metric">
+      <span>Payments</span>
+      <strong>{{ summary.total_payments }}</strong>
+    </div>
+    <div class="metric">
+      <span>Pending items</span>
+      <strong>{{ blocking_issue_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Approved</span>
+      <strong>{{ summary.approved_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Reconciled</span>
+      <strong>{{ summary.reconciled_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Exportable</span>
+      <strong>{{ summary.exportable_payments_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Total approved</span>
+      <strong>R$ {{ summary.approved_amount }}</strong>
+    </div>
+    <div class="metric">
+      <span>Total reconciled</span>
+      <strong>R$ {{ summary.reconciled_amount }}</strong>
+    </div>
+    <div class="metric">
+      <span>Canceled</span>
+      <strong>{{ summary.canceled_count }}</strong>
+    </div>
+  </div>
+
+  <h2>Payment status</h2>
+  <div class="summary-grid">
+    <div class="metric">
+      <span>Received</span>
+      <strong>{{ summary.received_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Pending registration</span>
+      <strong>{{ summary.pending_registration_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Pending approval</span>
+      <strong>{{ summary.pending_confirmation_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Under correction</span>
+      <strong>{{ summary.correcting_count }}</strong>
+    </div>
+  </div>
+
+  <h2>OFX</h2>
+  <div class="summary-grid">
+    <div class="metric">
+      <span>OFX imported</span>
+      <strong>{% if summary.has_ofx_imported %}Yes{% else %}No{% endif %}</strong>
+    </div>
+    <div class="metric">
+      <span>Expenses without payment</span>
+      <strong>{{ summary.ofx_expense_without_payment_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>OFX suggestions pending registration</span>
+      <strong>{{ summary.ofx_suggested_pending_registration_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Pending OFX suggestions</span>
+      <strong>{{ summary.ofx_suggested_pending_confirmation_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Pending</span>
+      <strong>{{ summary.ofx_pending_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Divergent</span>
+      <strong>{{ summary.ofx_divergent_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Possible duplicates</span>
+      <strong>{{ summary.ofx_possible_duplicate_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Ignored credits</span>
+      <strong>{{ summary.ofx_ignored_credit_count }}</strong>
+    </div>
+    <div class="metric">
+      <span>Approved without reconciliation</span>
+      <strong>{{ summary.approved_unreconciled_count }}</strong>
+    </div>
+  </div>
+
+  <h2>Blocking pending items</h2>
+  {% if blockers %}
+    <ul class="compact-list">
+      {% for blocker in blockers %}
+        <li>{{ blocker }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">No blocking pending item found.</p>
+  {% endif %}
+
+  {% if summary.payments_missing_required_fields %}
+    <h2>Missing required fields</h2>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Payment</th>
+            <th>Fields</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for issue in summary.payments_missing_required_fields|slice:":5" %}
+            <tr>
+              <td><a href="{% url 'internal_payment_detail' issue.payment_id %}">#{{ issue.payment_id }}</a></td>
+              <td>{{ issue.missing_fields|join:", " }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  {% if summary.payments_with_work_without_budget %}
+    <h2>Projects without imported budget</h2>
+    <div class="notice warning">
+      Informational warning: these payments remain allowed and exportable. The system does not invent a budget item index when the project has no imported budget yet. {{ budget_import_hint }}
+    </div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Payment</th>
+            <th>Project</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for issue in summary.payments_with_work_without_budget|slice:":5" %}
+            <tr>
+              <td><a href="{% url 'internal_payment_detail' issue.payment_id %}">#{{ issue.payment_id }}</a></td>
+              <td>{{ issue.work_name }}</td>
+              <td>
+                <div class="inline-actions">
+                  <a class="button" href="{% url 'internal_payment_detail' issue.payment_id %}">Open payment</a>
+                  <a class="button" href="{% url 'internal_work_budget_import' issue.work_id %}">Import budget</a>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  <h2>Period spreadsheets</h2>
+  {% if period_batches %}
+    <div class="table-scroll">
+      <table class="data-table operational-table compact-operational-table">
+        <thead>
+          <tr>
+            <th class="id-cell">Batch</th>
+            <th class="datetime-cell">Generated at</th>
+            <th class="count-cell">Records</th>
+            <th class="action-cell">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for batch in period_batches %}
+            <tr>
+              <td class="id-cell">#{{ batch.pk }}</td>
+              <td class="datetime-cell">{{ batch.generated_at|date:"d/m/Y H:i"|default:"-" }}</td>
+              <td class="count-cell">{{ batch.records_count }}</td>
+              <td class="action-cell">
+                <details class="actions-menu">
+                  <summary aria-label="Actions">...</summary>
+                  <div class="actions-menu-panel">
+                    {% if batch.accounting_file %}
+                      <a class="button compact-button" href="{% url 'internal_export_download_kind' batch.pk 'exportacao' %}">Accounting export</a>
+                    {% endif %}
+                    {% if batch.import_file or batch.file %}
+                      <a class="button compact-button" href="{% url 'internal_export_download_kind' batch.pk 'importacao' %}">System import</a>
+                    {% endif %}
+                    {% if not batch.accounting_file and not batch.import_file and not batch.file %}
+                      <span class="help">No file</span>
+                    {% endif %}
+                  </div>
+                </details>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No generated spreadsheet for this period.</p>
+  {% endif %}
+
+  <div class="actions">
+    <a class="button" href="{% url 'internal_pending_payments' %}">Pending payments</a>
+    <a class="button" href="{% url 'internal_unreconciled_ofx' %}">Pending OFX</a>
+    <a class="button" href="{% url 'internal_export_batches' %}">Generated spreadsheets</a>
+  </div>
+{% endblock %}

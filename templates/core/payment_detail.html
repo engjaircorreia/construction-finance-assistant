@@ -1,0 +1,208 @@
+{% extends "core/base.html" %}
+
+{% block title %}Payment {{ payment.pk }}{% endblock %}
+
+{% block content %}
+  <h1>Payment {{ payment.pk }}</h1>
+
+  <div class="actions">
+    {% if can_web_edit %}
+      <a class="button primary-link" href="{% url 'internal_payment_update' payment.pk %}?next={{ return_url|urlencode }}">Edit draft</a>
+    {% endif %}
+    {% if can_web_delete %}
+      <a class="button danger-link" href="{% url 'internal_payment_delete' payment.pk %}?next={{ return_url|urlencode }}">Delete</a>
+    {% endif %}
+    {% if payment.can_quick_approve %}
+      <form method="post" action="{% url 'internal_payment_action' payment.pk 'approve' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ return_url }}">
+        <button class="primary" type="submit">Approve</button>
+      </form>
+    {% endif %}
+    {% if payment.can_quick_change %}
+      <form method="post" action="{% url 'internal_payment_action' payment.pk 'cancel' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ return_url }}">
+        <button class="danger" type="submit">Cancel</button>
+      </form>
+    {% endif %}
+    <a class="button" href="{{ return_url }}">Back</a>
+  </div>
+
+  <h2>Main data</h2>
+  <dl>
+    <dt>Status</dt><dd>{{ payment.get_status_display }}</dd>
+    <dt>Accrual date</dt><dd>{{ payment.competence_date|date:"d/m/Y"|default:"-" }}</dd>
+    <dt>Due date</dt><dd>{{ payment.due_date|date:"d/m/Y"|default:"-" }}</dd>
+    <dt>Payment date</dt><dd>{{ payment.payment_date|date:"d/m/Y"|default:"-" }}</dd>
+    <dt>Amount</dt><dd>R$ {{ payment.amount }}</dd>
+    <dt>Vendor/Worker</dt><dd>{{ payment.counterparty.name|default:"-" }}</dd>
+    <dt>CPF/CNPJ</dt><dd>{{ payment.counterparty.primary_document|default:"-" }}</dd>
+    <dt>Description</dt><dd>{{ payment.description|default:"-" }}</dd>
+    <dt>Document number</dt><dd>{{ payment.document_number|default:"-" }}</dd>
+    <dt>Category</dt><dd>{{ payment.category.name|default:"-" }}</dd>
+    <dt>Payment method</dt><dd>{{ payment.payment_method|default:"-" }}</dd>
+    <dt>Payer</dt><dd>{{ payment.payer|default:"-" }}</dd>
+    <dt>Bank account</dt><dd>{{ payment.bank_account|default:"-" }}</dd>
+    <dt>Cost center</dt><dd>{{ payment.cost_center.name|default:"-" }}</dd>
+    <dt>Project</dt><dd>{{ payment.work.name|default:"-" }}</dd>
+    <dt>Budget item index</dt><dd>{{ payment.work_item_index|default:"-" }}</dd>
+    <dt>Source</dt><dd>{{ payment.get_source_display }}</dd>
+    <dt>Confidence</dt><dd>{{ payment.confidence }}</dd>
+    <dt>Created by</dt><dd>{{ payment.created_by.username|default:"-" }}</dd>
+    <dt>Confirmed by</dt><dd>{{ payment.confirmed_by.username|default:"-" }}</dd>
+    <dt>Confirmed at</dt><dd>{{ payment.confirmed_at|date:"d/m/Y H:i"|default:"-" }}</dd>
+    <dt>Review</dt><dd>{{ payment.review_reason|default:"-" }}</dd>
+  </dl>
+
+  {% if payment.work_without_budget %}
+    <div class="notice warning">
+      Project without imported budget. This warning is informational and does not block payment or export. Keep the step/item index empty until a reliable budget is imported. {{ budget_import_hint }}
+      {% if budget_import_url %}
+        <div class="actions"><a class="button" href="{{ budget_import_url }}">Import budget</a></div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <h2>Detected pending items</h2>
+  {% if payment.row_indicators %}
+    <div class="badges">
+      {% for indicator in payment.row_indicators %}
+        <span class="badge warning">{{ indicator }}</span>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty">No pending item detected.</p>
+  {% endif %}
+
+  <h2>Counterparty</h2>
+  {% if payment.counterparty %}
+    <dl>
+      <dt>Name</dt><dd>{{ payment.counterparty.name }}</dd>
+      <dt>Type</dt><dd>{{ payment.counterparty.get_kind_display }}</dd>
+      <dt>Person type</dt><dd>{{ payment.counterparty.get_person_type_display }}</dd>
+      <dt>Primary taxpayer ID</dt><dd>{{ payment.counterparty.primary_document|default:"-" }}</dd>
+      <dt>Default category</dt><dd>{{ payment.counterparty.default_category.name|default:"-" }}</dd>
+      <dt>Default cost center</dt><dd>{{ payment.counterparty.default_cost_center.name|default:"-" }}</dd>
+      <dt>Default project</dt><dd>{{ payment.counterparty.default_work.name|default:"-" }}</dd>
+    </dl>
+    <h2>Counterparty documents</h2>
+    {% if payment.counterparty.documents.all %}
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Number</th>
+              <th>Primary</th>
+              <th>Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for document in payment.counterparty.documents.all %}
+              <tr>
+                <td>{{ document.get_document_type_display }}</td>
+                <td>{{ document.number }}</td>
+                <td>{{ document.is_primary|yesno:"Yes,No" }}</td>
+                <td>{{ document.get_source_display }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="empty">No additional document registered.</p>
+    {% endif %}
+  {% else %}
+    <p class="empty">No counterparty linked.</p>
+  {% endif %}
+
+  <h2>Linked file or receipt</h2>
+  {% if payment.uploaded_file %}
+    <dl>
+      <dt>File</dt><dd>{{ payment.uploaded_file.original_filename }}</dd>
+      <dt>Type</dt><dd>{{ payment.uploaded_file.get_kind_display }}</dd>
+      <dt>Source</dt><dd>{{ payment.uploaded_file.get_source_display }}</dd>
+      <dt>Status</dt><dd>{{ payment.uploaded_file.get_status_display }}</dd>
+      <dt>Content type</dt><dd>{{ payment.uploaded_file.content_type|default:"-" }}</dd>
+      <dt>Size</dt><dd>{{ payment.uploaded_file.size_bytes|default:"-" }}</dd>
+      <dt>Telegram</dt><dd>{{ payment.uploaded_file.telegram_message_id|default:"-" }}</dd>
+    </dl>
+    {% if payment.uploaded_file.extracted_text %}
+      <h2>Extracted file text</h2>
+      <pre>{{ payment.uploaded_file.extracted_text }}</pre>
+    {% endif %}
+  {% else %}
+    <p class="empty">No file linked.</p>
+  {% endif %}
+
+  <h2>Original extracted data</h2>
+  {% if raw_payload_json != "{}" %}
+    <pre>{{ raw_payload_json }}</pre>
+  {% else %}
+    <p class="empty">No raw data stored.</p>
+  {% endif %}
+
+  <h2>OFX reconciled</h2>
+  {% if reconciliations %}
+    <div class="table-scroll">
+      <table class="data-table operational-table">
+        <thead>
+          <tr>
+            <th class="status-cell">Status</th>
+            <th class="count-cell">Confidence</th>
+            <th class="date-cell">OFX date</th>
+            <th class="money-cell">OFX amount</th>
+            <th class="text-cell">Taxpayer ID</th>
+            <th class="wide-text-cell">Memo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reconciliation in reconciliations %}
+            <tr>
+              <td class="status-cell"><span class="badge">{{ reconciliation.get_status_display }}</span></td>
+              <td class="count-cell">{{ reconciliation.confidence }}</td>
+              <td class="date-cell">{{ reconciliation.transaction.posted_at|date:"d/m/Y" }}</td>
+              <td class="money-cell">R$ {{ reconciliation.transaction.amount }}</td>
+              <td class="text-cell">{{ reconciliation.transaction.document_extracted|default:"-" }}</td>
+              <td class="wide-text-cell">{{ reconciliation.transaction.memo|default:"-" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No OFX reconciliation linked.</p>
+  {% endif %}
+
+  <h2>Confirmation history</h2>
+  {% if confirmations %}
+    <div class="table-scroll">
+      <table class="data-table operational-table">
+        <thead>
+          <tr>
+            <th class="datetime-cell">Date</th>
+            <th class="status-cell">Action</th>
+            <th class="text-cell">User</th>
+            <th class="text-cell">Telegram</th>
+            <th class="wide-text-cell">Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for confirmation in confirmations %}
+            <tr>
+              <td class="datetime-cell">{{ confirmation.created_at|date:"d/m/Y H:i" }}</td>
+              <td class="status-cell"><span class="badge">{{ confirmation.get_action_display }}</span></td>
+              <td class="text-cell">{{ confirmation.user.username|default:"-" }}</td>
+              <td class="text-cell">{{ confirmation.telegram_user_id|default:"-" }}</td>
+              <td class="wide-text-cell">{{ confirmation.message|default:"-" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No confirmation registered.</p>
+  {% endif %}
+
+{% endblock %}

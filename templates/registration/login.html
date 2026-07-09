@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sign In</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0e141b;
+      --surface: #151d26;
+      --border: #314150;
+      --text: #edf3f8;
+      --muted: #a9b7c6;
+      --accent: #36b595;
+      --danger: #ff8d87;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: var(--text);
+      background: var(--bg);
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    main {
+      width: min(100%, 380px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 22px;
+    }
+    h1 { margin: 0 0 18px; font-size: 24px; }
+    form { display: grid; gap: 14px; }
+    p { margin: 0; display: grid; gap: 5px; color: var(--muted); font-size: 13px; font-weight: 700; }
+    input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 9px 10px;
+      background: #111923;
+      color: var(--text);
+      font: inherit;
+    }
+    input:focus { outline: 2px solid rgba(54, 181, 149, 0.35); outline-offset: 1px; border-color: var(--accent); }
+    button {
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 10px 12px;
+      background: var(--accent);
+      color: #07100d;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .errorlist {
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 141, 135, 0.55);
+      color: var(--danger);
+      background: rgba(255, 141, 135, 0.10);
+      list-style: none;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Sign In</h1>
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit">Sign In</button>
+    </form>
+  </main>
+</body>
+</html>

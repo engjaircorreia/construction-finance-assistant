@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+
+{% block title %}Edit draft {{ draft.pk }}{% endblock %}
+
+{% block content %}
+  <h1>Edit draft #{{ draft.pk }}</h1>
+
+  <div class="tabs">
+    <a href="{% url 'internal_pending_payments' %}">Payments</a>
+    <a class="active" href="{% url 'internal_telegram_drafts' %}">Drafts</a>
+  </div>
+
+  <form class="form-grid" method="post">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="notice danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    {% for field in form %}
+      <label{% if field.name == "description" %} class="span-2"{% endif %}>
+        {{ field.label }}
+        {{ field }}
+        {% if field.help_text %}<span class="help">{{ field.help_text }}</span>{% endif %}
+        {% for error in field.errors %}<span class="error">{{ error }}</span>{% endfor %}
+      </label>
+    {% endfor %}
+
+    <div class="form-actions span-2">
+      <button class="primary" type="submit">Save draft</button>
+      <a class="button" href="{% url 'internal_telegram_draft_detail' draft.pk %}">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

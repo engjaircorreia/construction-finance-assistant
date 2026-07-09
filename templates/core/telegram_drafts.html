@@ -1,0 +1,117 @@
+{% extends "core/base.html" %}
+
+{% block title %}Drafts{% endblock %}
+
+{% block content %}
+  <h1>Drafts</h1>
+
+  <div class="tabs">
+    <a href="{% url 'internal_pending_payments' %}">Payments</a>
+    <a class="active" href="{% url 'internal_telegram_drafts' %}">Drafts</a>
+  </div>
+
+  <form class="filters" method="get">
+    <label>
+      Start date
+      <input type="date" name="date_inicio" value="{{ date_start|date:'Y-m-d' }}">
+    </label>
+    <label>
+      End date
+      <input type="date" name="date_fim" value="{{ date_end|date:'Y-m-d' }}">
+    </label>
+    <label>
+      Status
+      <select name="status">
+        {% for value, label in status_filters %}
+          <option value="{{ value }}"{% if value == selected_status %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="primary" type="submit">Filter</button>
+    <a class="button" href="{% url 'internal_telegram_drafts' %}">Clear</a>
+  </form>
+
+  {% if drafts %}
+    <div class="table-scroll">
+      <table class="data-table operational-table compact-operational-table">
+        <thead>
+          <tr>
+            <th class="id-cell">ID</th>
+            <th class="datetime-cell">Atualizado</th>
+            <th class="wide-text-cell">Payment</th>
+            <th class="classification-cell">Classification</th>
+            <th class="indicator-cell">Pending items</th>
+            <th class="status-cell">Status</th>
+            <th class="action-cell">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for draft in drafts %}
+            <tr>
+              <td class="id-cell">#{{ draft.pk }}</td>
+              <td class="datetime-cell">{{ draft.updated_at|date:"d/m/Y H:i" }}</td>
+              <td class="wide-text-cell">
+                {% if draft.counterparty %}
+                  <strong>{{ draft.counterparty.name }}</strong>
+                {% elif draft.counterparty_candidate_name %}
+                  <span class="badge warning">Suggested registration</span>
+                  <strong>{{ draft.counterparty_candidate_name }}</strong>
+                {% else %}
+                  <strong>No counterparty</strong>
+                {% endif %}
+                <br>
+                {% if draft.amount is not None %}R$ {{ draft.amount }}{% else %}Amount pending{% endif %}
+                · {{ draft.payment_date|date:"d/m/Y"|default:"no date" }}
+                <br><span class="help">{{ draft.sender_name|default:"Telegram" }} · {{ draft.uploaded_file_count }} file(s)</span>
+              </td>
+              <td class="classification-cell">
+                <strong>{{ draft.category.name|default:"No category" }}</strong>
+                <br>
+                {% if draft.work %}
+                  {{ draft.work.name }}
+                {% elif draft.work_candidate_name %}
+                  <span class="badge warning">Suggested project</span>
+                  {{ draft.work_candidate_name }}
+                {% else %}
+                  {{ draft.cost_center.name|default:"No cost center" }}
+                {% endif %}
+                {% if draft.work and draft.cost_center %}
+                  <br><span class="help">{{ draft.cost_center.name }}</span>
+                {% endif %}
+              </td>
+              <td class="indicator-cell">
+                <div class="badges">
+                  {% if not draft.counterparty and draft.counterparty_candidate_name %}
+                    <span class="badge warning">Suggested registration</span>
+                  {% elif not draft.counterparty %}
+                    <span class="badge warning">No counterparty</span>
+                  {% endif %}
+                  {% if draft.work_candidate_name and not draft.work %}
+                    <span class="badge warning">Suggested project</span>
+                  {% endif %}
+                  {% if draft.work_without_budget %}
+                    <span class="badge warning">Project without budget</span>
+                  {% endif %}
+                  {% if not draft.payment_date %}
+                    <span class="badge warning">Without date</span>
+                  {% endif %}
+                </div>
+              </td>
+              <td class="status-cell"><span class="badge">{{ draft.get_status_display }}</span></td>
+              <td class="action-cell">
+                <details class="actions-menu">
+                  <summary aria-label="Actions">...</summary>
+                  <div class="actions-menu-panel">
+                    <a class="button compact-button primary-link" href="{% url 'internal_telegram_draft_detail' draft.pk %}">Review</a>
+                  </div>
+                </details>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No draft found.</p>
+  {% endif %}
+{% endblock %}

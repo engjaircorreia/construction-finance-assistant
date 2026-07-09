@@ -1,0 +1,210 @@
+{% extends "core/base.html" %}
+
+{% block title %}Payments{% endblock %}
+
+{% block content %}
+  <h1>Payments</h1>
+
+  <div class="tabs">
+    <a class="active" href="{% url 'internal_pending_payments' %}">Payments</a>
+    <a href="{% url 'internal_telegram_drafts' %}">Drafts</a>
+  </div>
+
+  <div class="actions">
+    <a class="button primary-link" href="{% url 'internal_payment_create' %}?next={{ current_url|urlencode }}">New payment</a>
+  </div>
+
+  <form class="filters" method="get">
+    <label>
+      Start date
+      <input type="date" name="date_inicio" value="{{ date_start|date:'Y-m-d' }}">
+    </label>
+    <label>
+      End date
+      <input type="date" name="date_fim" value="{{ date_end|date:'Y-m-d' }}">
+    </label>
+    <label>
+      Status
+      <select name="status">
+        {% for value, label in status_filters %}
+          <option value="{{ value }}"{% if value == selected_status %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Vendor/Worker
+      <select name="counterparty">
+        <option value="">All</option>
+        {% for counterparty in counterparties %}
+          <option value="{{ counterparty.id }}"{% if counterparty.id == selected_counterparty_id %} selected{% endif %}>{{ counterparty.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Category
+      <select name="category">
+        <option value="">All</option>
+        <option value="sem"{% if selected_category_missing %} selected{% endif %}>No category</option>
+        {% for category in categories %}
+          <option value="{{ category.id }}"{% if category.id == selected_category_id %} selected{% endif %}>{{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Cost center
+      <select name="cost_center">
+        <option value="">All</option>
+        <option value="sem"{% if selected_cost_center_missing %} selected{% endif %}>No cost center</option>
+        {% for cost_center in cost_centers %}
+          <option value="{{ cost_center.id }}"{% if cost_center.id == selected_cost_center_id %} selected{% endif %}>{{ cost_center.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Project
+      <select name="work">
+        <option value="">All</option>
+        <option value="sem"{% if selected_work_missing %} selected{% endif %}>No project</option>
+        {% for work in works %}
+          <option value="{{ work.id }}"{% if work.id == selected_work_id %} selected{% endif %}>{{ work.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      CPF/CNPJ
+      <select name="documento">
+        {% for value, label in document_filters %}
+          <option value="{{ value }}"{% if value == selected_document %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Date
+      <select name="date_status">
+        {% for value, label in date_status_filters %}
+          <option value="{{ value }}"{% if value == selected_date_status %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      OFX
+      <select name="ofx">
+        {% for value, label in reconciliation_filters %}
+          <option value="{{ value }}"{% if value == selected_reconciliation %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="primary" type="submit">Filter</button>
+    <a class="button" href="{% url 'internal_pending_payments' %}">Clear</a>
+  </form>
+
+  {% if payments %}
+    <form id="bulk-payment-form" method="post" action="{% url 'internal_payment_bulk_action' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="approve">
+      <input type="hidden" name="next" value="{{ current_url }}">
+    </form>
+    <div class="bulk-actions">
+      <div>
+        <strong>Bulk approval</strong>
+        <p>{{ bulk_approvable_count }} pending payment(s) available for approval in this list.</p>
+      </div>
+      <button class="primary" type="submit" form="bulk-payment-form"{% if not bulk_approvable_count %} disabled{% endif %}>
+        Approve selected
+      </button>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table operational-table compact-operational-table">
+        <thead>
+          <tr>
+            <th class="select-cell">
+              <input id="select-all-payments" type="checkbox" aria-label="Select all approvable payments"{% if not bulk_approvable_count %} disabled{% endif %}>
+            </th>
+            <th class="date-cell">Date</th>
+            <th class="money-cell">Amount</th>
+            <th class="wide-text-cell">Vendor/Worker</th>
+            <th class="classification-cell">Classification</th>
+            <th class="status-cell">Status</th>
+            <th class="indicator-cell">Pending items</th>
+            <th class="action-cell">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for payment in payments %}
+            <tr>
+              <td class="select-cell">
+                {% if payment.can_bulk_approve %}
+                  <input form="bulk-payment-form" type="checkbox" name="payment_ids" value="{{ payment.pk }}" aria-label="Select payment {{ payment.pk }}">
+                {% else %}
+                  <span class="help">-</span>
+                {% endif %}
+              </td>
+              <td class="date-cell">{{ payment.payment_date|date:"d/m/Y"|default:"-" }}</td>
+              <td class="money-cell">{{ payment.amount_display }}</td>
+              <td class="wide-text-cell">
+                {{ payment.counterparty.name|default:"-" }}
+                {% if payment.description %}
+                  <br><span class="help">{{ payment.description|truncatechars:70 }}</span>
+                {% endif %}
+              </td>
+              <td class="classification-cell">
+                <strong>{{ payment.category.name|default:"No category" }}</strong>
+                <br>
+                {% if payment.work %}
+                  {{ payment.work.name }}
+                {% else %}
+                  {{ payment.cost_center.name|default:"No cost center" }}
+                {% endif %}
+                {% if payment.work and payment.cost_center %}
+                  <br><span class="help">{{ payment.cost_center.name }}</span>
+                {% endif %}
+              </td>
+              <td class="status-cell">
+                <span class="badge">{{ payment.get_status_display }}</span>
+                {% if payment.has_confirmed_reconciliation %}
+                  <br><span class="badge ok">OFX reconciled</span>
+                {% else %}
+                  <br><span class="badge warning">OFX pending</span>
+                {% endif %}
+              </td>
+              <td class="indicator-cell">
+                {% if payment.row_indicators %}
+                  <div class="badges">
+                    {% for indicator in payment.row_indicators %}
+                      <span class="badge warning">{{ indicator }}</span>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="action-cell">
+                <details class="actions-menu">
+                  <summary aria-label="Actions">...</summary>
+                  <div class="actions-menu-panel">
+                    <a class="button compact-button primary-link" href="{% url 'internal_payment_detail' payment.pk %}?next={{ current_url|urlencode }}">Review</a>
+                  </div>
+                </details>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <script>
+      (function () {
+        const selectAll = document.getElementById("select-all-payments");
+        if (!selectAll) return;
+        selectAll.addEventListener("change", function () {
+          document
+            .querySelectorAll('input[name="payment_ids"][form="bulk-payment-form"]:not(:disabled)')
+            .forEach(function (input) {
+              input.checked = selectAll.checked;
+            });
+        });
+      })();
+    </script>
+  {% else %}
+    <p class="empty">No payment found for the selected filters.</p>
+  {% endif %}
+{% endblock %}

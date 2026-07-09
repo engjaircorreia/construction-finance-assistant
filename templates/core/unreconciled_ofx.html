@@ -1,0 +1,332 @@
+{% extends "core/base.html" %}
+
+{% block title %}OFX review{% endblock %}
+
+{% block content %}
+  <div class="section-heading-row">
+    <h1>OFX review</h1>
+    <a class="button" href="{{ monthly_closing_url }}">Back to close</a>
+  </div>
+
+  <form class="actions" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="ofx_file" accept=".ofx">
+    <button class="primary" type="submit">Import OFX</button>
+  </form>
+  <form class="actions" method="post" action="{{ clear_ofx_period_url }}" onsubmit="return confirm('Clear OFX data for this period? This action removes transactions, reconciliations, and suggestions created from OFX.');">
+    {% csrf_token %}
+    <input type="hidden" name="mes" value="{{ selected_month }}">
+    <input type="hidden" name="ano" value="{{ selected_year }}">
+    <input type="hidden" name="next" value="{{ current_url }}">
+    <button class="danger" type="submit">Clear period OFX</button>
+  </form>
+
+  <form class="filters" method="get">
+    <label>
+      Month
+      <select name="mes">
+        {% for value, label in month_choices %}
+          <option value="{{ value }}"{% if value == selected_month %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Year
+      <select name="ano">
+        {% for value in year_choices %}
+          <option value="{{ value }}"{% if value == selected_year %} selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      OFX status
+      <select name="status">
+        {% for value, label in status_filters %}
+          <option value="{{ value }}"{% if value == selected_status %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Payment
+      <select name="payment">
+        {% for value, label in payment_filters %}
+          <option value="{{ value }}"{% if value == selected_payment_filter %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Counterparty
+      <select name="counterparty">
+        <option value="">All</option>
+        {% for counterparty in counterparties %}
+          <option value="{{ counterparty.pk }}"{% if counterparty.pk == selected_counterparty_id %} selected{% endif %}>{{ counterparty.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Cost center
+      <select name="cost_center">
+        <option value="">All</option>
+        {% for cost_center in cost_centers %}
+          <option value="{{ cost_center.pk }}"{% if cost_center.pk == selected_cost_center_id %} selected{% endif %}>{{ cost_center.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Project
+      <select name="work">
+        <option value="">All</option>
+        {% for work in works %}
+          <option value="{{ work.pk }}"{% if work.pk == selected_work_id %} selected{% endif %}>{{ work.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="primary" type="submit">Filter</button>
+  </form>
+
+  <p class="help">{{ period_start|date:"d/m/Y" }} to {{ period_end|date:"d/m/Y" }}</p>
+
+  {% if transactions %}
+    <form id="ofx-bulk-edit-form" method="post" action="{{ ofx_bulk_edit_url }}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ current_url }}">
+    </form>
+    <form id="ofx-bulk-approval-form" method="post" action="{{ payment_bulk_action_url }}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="approve">
+      <input type="hidden" name="next" value="{{ current_url }}">
+    </form>
+    <div class="bulk-actions bulk-edit-panel">
+      <div>
+        <strong>Quick bulk edit</strong>
+        <p>{{ ofx_bulk_editable_count }} OFX-suggested payment(s) can be edited in this list.</p>
+      </div>
+      <div class="bulk-edit-fields">
+        <label>
+          {{ ofx_bulk_edit_form.category.label }}
+          {{ ofx_bulk_edit_form.category }}
+        </label>
+        <label>
+          {{ ofx_bulk_edit_form.cost_center.label }}
+          {{ ofx_bulk_edit_form.cost_center }}
+        </label>
+        <label>
+          {{ ofx_bulk_edit_form.work.label }}
+          {{ ofx_bulk_edit_form.work }}
+        </label>
+        <label>
+          {{ ofx_bulk_edit_form.payment_method.label }}
+          {{ ofx_bulk_edit_form.payment_method }}
+        </label>
+        <label>
+          {{ ofx_bulk_edit_form.payer.label }}
+          {{ ofx_bulk_edit_form.payer }}
+        </label>
+        <label>
+          {{ ofx_bulk_edit_form.bank_account.label }}
+          {{ ofx_bulk_edit_form.bank_account }}
+        </label>
+        <label>
+          {{ ofx_bulk_edit_form.payment_status.label }}
+          {{ ofx_bulk_edit_form.payment_status }}
+        </label>
+        <label class="checkbox-label">
+          {{ ofx_bulk_edit_form.clear_work_if_company }}
+          {{ ofx_bulk_edit_form.clear_work_if_company.label }}
+        </label>
+      </div>
+      <button class="primary" type="submit" form="ofx-bulk-edit-form"{% if not ofx_bulk_editable_count %} disabled{% endif %}>
+        Apply to selected
+      </button>
+    </div>
+    <div class="bulk-actions">
+      <div>
+        <strong>Bulk approval</strong>
+        <p>
+          {{ ofx_bulk_approvable_count }} approvable OFX-suggested payment(s).
+          <span id="ofx-selected-count">0</span> selected,
+          <span id="ofx-selected-approvable-count">0</span> approvable in the selection.
+        </p>
+        <p>Items with pending registration, duplicates, or missing required fields will be skipped and reported.</p>
+      </div>
+      <button class="primary" type="submit" form="ofx-bulk-approval-form"{% if not ofx_bulk_approvable_count %} disabled{% endif %}>
+        Approve selected
+      </button>
+    </div>
+    <div class="table-scroll ofx-review-scroll">
+      <table class="data-table ofx-review-table">
+        <thead>
+          <tr>
+            <th class="select-cell">
+              <input id="select-all-ofx-payments" type="checkbox" aria-label="Select all OFX payments"{% if not ofx_selectable_payment_count %} disabled{% endif %}>
+            </th>
+            <th class="date-cell">Date</th>
+            <th class="money-cell">Amount</th>
+            <th class="ofx-summary-cell">Payee</th>
+            <th class="status-cell">Status</th>
+            <th class="related-payment-cell">Payment</th>
+            <th class="category-cell">Category</th>
+            <th class="cost-center-cell">Cost center</th>
+            <th class="work-cell">Project</th>
+            <th class="action-cell">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for transaction in transactions %}
+            {% with item=transaction.primary_related_payment alternatives=transaction.alternative_related_payments %}
+              <tr class="ofx-review-row" data-ofx-transaction-id="{{ transaction.pk }}" data-payment-id="{% if item %}{{ item.payment.pk }}{% endif %}">
+                <td class="select-cell">
+                  {% if item.can_bulk_edit or item.can_bulk_approve %}
+                    <input form="ofx-bulk-approval-form" type="checkbox" name="payment_ids" value="{{ item.payment.pk }}" data-bulk-approvable="{% if item.can_bulk_approve %}1{% else %}0{% endif %}" aria-label="Select payment {{ item.payment.pk }}">
+                  {% else %}
+                    <span class="help">-</span>
+                  {% endif %}
+                </td>
+                <td class="date-cell">{{ transaction.posted_at|date:"d/m/Y" }}</td>
+                <td class="money-cell">{{ transaction.amount_display }}</td>
+                <td class="ofx-summary-cell">
+                  <strong>{{ transaction.name_summary }}</strong>
+                  <details class="ofx-details">
+                    <summary>OFX details</summary>
+                    <dl>
+                      <dt>Type</dt>
+                      <dd>{{ transaction.transaction_type|default:"-" }}</dd>
+                      <dt>CPF/CNPJ</dt>
+                      <dd>{{ transaction.document_extracted|default:"-" }}</dd>
+                      <dt>Memo</dt>
+                      <dd>{{ transaction.memo_summary }}</dd>
+                    </dl>
+                    {% if alternatives %}
+                      <div class="ofx-alternatives">
+                        <strong>Other suggestions</strong>
+                        {% for related in alternatives %}
+                          <div class="ofx-alternative" data-alternative-payment-id="{{ related.payment.pk }}">
+                            <div>
+                              <span class="badge {{ related.kind_badge_class }}">{{ related.kind }}</span>
+                              <a href="{% url 'internal_payment_detail' related.payment.pk %}">#{{ related.payment.pk }}</a>
+                              <span>{{ related.payment.amount_display }}</span>
+                              <span>{{ related.payment.counterparty.name|default:"No counterparty" }}</span>
+                              <span class="badge {{ related.payment_status_badge_class }}">{{ related.payment_status_label }}</span>
+                            </div>
+                            <div class="ofx-alternative-actions">
+                              <a class="button compact-button primary-link" href="{% url 'internal_payment_detail' related.payment.pk %}">Review</a>
+                              {% if related.needs_counterparty_registration %}
+                                <a class="button compact-button" href="{{ related.supplier_create_url }}">Vendor</a>
+                                <a class="button compact-button" href="{{ related.worker_create_url }}">Worker</a>
+                              {% endif %}
+                            </div>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  </details>
+                </td>
+                <td class="status-cell">
+                  <span class="badge {{ transaction.ofx_status_badge_class }}">{{ transaction.ofx_status_label }}</span>
+                  {% if item %}
+                    <span class="badge {{ item.payment_status_badge_class }}">{{ item.payment_status_label }}</span>
+                  {% endif %}
+                </td>
+                <td class="related-payment-cell">
+                  {% if item %}
+                    <div class="ofx-related-payment">
+                      <span class="badge {{ item.kind_badge_class }}">{{ item.kind }}</span>
+                      <a href="{% url 'internal_payment_detail' item.payment.pk %}">#{{ item.payment.pk }}</a>
+                      <span class="money-cell">{{ item.payment.amount_display }}</span>
+                      <span>{{ item.payment.counterparty.name|default:"No counterparty" }}</span>
+                      {% if alternatives %}
+                        <span class="help">+ {{ alternatives|length }} alternative(s)</span>
+                      {% endif %}
+                    </div>
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td class="category-cell">{% if item %}{{ item.payment.category.name|default:"-" }}{% else %}-{% endif %}</td>
+                <td class="cost-center-cell">{% if item %}{{ item.payment.cost_center.name|default:"-" }}{% else %}-{% endif %}</td>
+                <td class="work-cell">{% if item %}{{ item.payment.work.name|default:"-" }}{% else %}-{% endif %}</td>
+                <td class="action-cell">
+                  <details class="actions-menu">
+                  <summary aria-label="Actions">...</summary>
+                  <div class="actions-menu-panel">
+                      {% if item %}
+                        <a class="button compact-button primary-link" href="{% url 'internal_payment_detail' item.payment.pk %}">Review</a>
+                        {% if item.needs_counterparty_registration %}
+                          <a class="button compact-button" href="{{ item.supplier_create_url }}">Vendor</a>
+                          <a class="button compact-button" href="{{ item.worker_create_url }}">Worker</a>
+                        {% endif %}
+                      {% endif %}
+                      {% if transaction.can_ignore %}
+                        <form method="post" action="{% url 'internal_ofx_action' transaction.pk 'ignore' %}">
+                          {% csrf_token %}
+                          <input type="hidden" name="next" value="{{ current_url }}">
+                          <button class="compact-button danger" type="submit">Ignore</button>
+                        </form>
+                      {% endif %}
+                      <form method="post" action="{% url 'internal_ofx_action' transaction.pk 'mark_duplicate' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ current_url }}">
+                        <button class="compact-button" type="submit">Mark duplicate</button>
+                      </form>
+                    </div>
+                  </details>
+                </td>
+              </tr>
+            {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <script>
+      (function () {
+        const selectAll = document.getElementById("select-all-ofx-payments");
+        const editForm = document.getElementById("ofx-bulk-edit-form");
+        const selectedCount = document.getElementById("ofx-selected-count");
+        const selectedApprovableCount = document.getElementById("ofx-selected-approvable-count");
+        const checkboxes = function () {
+          return Array.from(document.querySelectorAll('input[name="payment_ids"][form="ofx-bulk-approval-form"]:not(:disabled)'));
+        };
+        const updateCounts = function () {
+          const selected = checkboxes().filter(function (input) { return input.checked; });
+          if (selectedCount) selectedCount.textContent = selected.length;
+          if (selectedApprovableCount) {
+            selectedApprovableCount.textContent = selected.filter(function (input) {
+              return input.dataset.bulkApprovable === "1";
+            }).length;
+          }
+        };
+        if (selectAll) {
+          selectAll.addEventListener("change", function () {
+            checkboxes().forEach(function (input) {
+              input.checked = selectAll.checked;
+            });
+            updateCounts();
+          });
+        }
+        checkboxes().forEach(function (input) {
+          input.addEventListener("change", updateCounts);
+        });
+        if (editForm) {
+          editForm.addEventListener("submit", function () {
+            editForm.querySelectorAll('input[data-copied-payment-id="1"]').forEach(function (input) {
+              input.remove();
+            });
+            document
+              .querySelectorAll('input[name="payment_ids"][form="ofx-bulk-approval-form"]:checked')
+              .forEach(function (input) {
+                const hidden = document.createElement("input");
+                hidden.type = "hidden";
+                hidden.name = "payment_ids";
+                hidden.value = input.value;
+                hidden.dataset.copiedPaymentId = "1";
+                editForm.appendChild(hidden);
+            });
+          });
+        }
+        updateCounts();
+      })();
+    </script>
+  {% else %}
+    <p class="empty">No OFX transaction found for the selected filters.</p>
+  {% endif %}
+{% endblock %}

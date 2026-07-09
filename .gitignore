@@ -1,0 +1,88 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Django
+*.log
+db.sqlite3
+db.sqlite3-journal
+/staticfiles/
+/media/
+
+# Secrets and environment
+.env
+.env.*
+!.env.example
+
+# Runtime/generated files
+/storage/*
+!/storage/.gitkeep
+/exports/
+/uploads/
+/comprovantes/
+/ofx/
+/planilhas_geradas/
+/generated/
+/private/
+/backups/
+/data/*
+!/data/.gitkeep
+/tmp/
+/dumps/
+/restore/
+/certbot/
+/letsencrypt/
+celerybeat-schedule
+*.dump
+*.sql
+*.sql.gz
+*.bak
+*.backup
+
+# Local historical payment sources
+/files/pagamentos/*.ofx
+/files/pagamentos/*.pdf
+/files/pagamentos/*.png
+/files/pagamentos/*.jpg
+/files/pagamentos/*.jpeg
+/files/pagamentos/*.xlsx
+/files/*.pdf
+/files/*.ofx
+/files/*.png
+/files/*.jpg
+/files/*.jpeg
+/files/*.csv
+/files/*.xlsx
+/files/**/*.xlsx
+!/files/modelo_exportacao.xlsx
+!/files/modelo_importacao.xlsx
+!/files/planilhas_modelo_importacao/Planilha_Modelo_Pagamentos.xlsx
+
+# Local real business data
+/files/Orçamento Sintético*.xlsx
+/files/*.md
+/otherfiles/*.xlsx
+/prompts.md
+
+# Local/editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Office temporary files
+~$*.xlsx
+~$*.xls

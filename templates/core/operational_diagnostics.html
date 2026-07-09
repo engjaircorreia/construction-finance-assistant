@@ -1,0 +1,121 @@
+{% extends "core/base.html" %}
+
+{% block title %}Operational diagnostics{% endblock %}
+
+{% block content %}
+  <h1>Operational diagnostics</h1>
+
+  <div class="summary-grid">
+    <div class="metric">
+      <span>Active drafts</span>
+      <strong>{{ diagnostics.counters.active_drafts }}</strong>
+    </div>
+    <div class="metric">
+      <span>Pending payments</span>
+      <strong>{{ diagnostics.counters.pending_payments }}</strong>
+    </div>
+    <div class="metric">
+      <span>Pending registration</span>
+      <strong>{{ diagnostics.counters.pending_registration }}</strong>
+    </div>
+    <div class="metric">
+      <span>Pending approval</span>
+      <strong>{{ diagnostics.counters.pending_confirmation }}</strong>
+    </div>
+    <div class="metric">
+      <span>Pending OFX</span>
+      <strong>{{ diagnostics.counters.ofx_pending }}</strong>
+    </div>
+    <div class="metric">
+      <span>Divergent OFX</span>
+      <strong>{{ diagnostics.counters.ofx_divergent }}</strong>
+    </div>
+  </div>
+
+  <h2>Services</h2>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Status</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for service in diagnostics.services %}
+          <tr>
+            <td>{{ service.label }}</td>
+            <td><span class="badge {{ service.level }}">{{ service.status }}</span></td>
+            <td>{{ service.detail|default:"-" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Environment</h2>
+  <dl>
+    <dt>Current environment</dt>
+    <dd>{{ diagnostics.environment }}</dd>
+    <dt>DEBUG</dt>
+    <dd>{% if diagnostics.debug %}Active{% else %}Inactive{% endif %}</dd>
+    <dt>Settings</dt>
+    <dd>{{ diagnostics.settings_module|default:"-" }}</dd>
+  </dl>
+
+  <h2>Latest files</h2>
+  <dl>
+    <dt>Latest generated spreadsheet</dt>
+    <dd>
+      {% if diagnostics.last_export_batch %}
+        Batch #{{ diagnostics.last_export_batch.pk }} -
+        {{ diagnostics.last_export_batch.generated_at|date:"d/m/Y H:i"|default:"no date" }} -
+        {{ diagnostics.last_export_batch.records_count }} payment(s)
+      {% else %}
+        No generated spreadsheet
+      {% endif %}
+    </dd>
+    <dt>Latest imported OFX</dt>
+    <dd>
+      {% if diagnostics.last_ofx_file %}
+        #{{ diagnostics.last_ofx_file.pk }} -
+        {{ diagnostics.last_ofx_file.original_filename }} -
+        {{ diagnostics.last_ofx_file.get_status_display }}
+      {% else %}
+        No OFX imported
+      {% endif %}
+    </dd>
+  </dl>
+
+  <h2>Errors operacionais recentes</h2>
+  {% if diagnostics.recent_errors %}
+    <div class="table-scroll">
+      <table class="data-table operational-table compact-operational-table">
+        <thead>
+          <tr>
+            <th class="datetime-cell">Quando</th>
+            <th class="text-cell">Source</th>
+            <th class="wide-text-cell">Summary</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for error in diagnostics.recent_errors %}
+            <tr>
+              <td class="datetime-cell">{{ error.when|date:"d/m/Y H:i" }}</td>
+              <td class="text-cell">{{ error.source }}</td>
+              <td class="wide-text-cell">
+                {{ error.summary }}
+                {% if error.detail %}
+                  <br><span class="help">{{ error.detail|truncatechars:120 }}</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No recent operational error registered.</p>
+  {% endif %}
+{% endblock %}

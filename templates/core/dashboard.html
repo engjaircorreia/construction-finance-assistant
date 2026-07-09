@@ -1,0 +1,265 @@
+{% extends "core/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+  <h1>Dashboard</h1>
+
+  <form class="filters" method="get">
+    <label>
+      Month
+      <select name="mes">
+        {% for value, label in month_choices %}
+          <option value="{{ value }}"{% if value == selected_month %} selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Year
+      <select name="ano">
+        {% for value in year_choices %}
+          <option value="{{ value }}"{% if value == selected_year %} selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="primary" type="submit">Update</button>
+  </form>
+
+  <p>{{ summary.period_start|date:"d/m/Y" }} to {{ summary.period_end|date:"d/m/Y" }}</p>
+
+  <div class="summary-grid">
+    {% for card in dashboard_cards %}
+      <div class="metric">
+        <span>{{ card.label }}</span>
+        <strong>{{ card.value }}</strong>
+        <small class="help">{{ card.detail }}</small>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="dashboard-grid">
+    <div class="dashboard-column">
+      <section class="dashboard-panel">
+        <h2>Expenses by financial center</h2>
+        {% if financial_center_legend %}
+          <div class="pie-wrap">
+            <div
+              class="pie-chart"
+              role="img"
+              aria-label="Expenses by financial center chart. The text legend lists amounts and percentages."
+              style="background: {{ financial_center_pie_gradient }};"
+            ></div>
+          </div>
+          <ul class="legend-list">
+            {% for item in financial_center_legend %}
+              <li class="legend-item">
+                <span class="legend-color" style="background: {{ item.color }};"></span>
+                <span class="legend-main">
+                  <a href="{{ item.url }}">{{ item.label }}</a>
+                  <br>{{ item.count }} payment(s)
+                </span>
+                <span class="legend-value">{{ item.amount_display }}<br>{{ item.percentage }}%</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="empty">No realized expense in the period.</p>
+        {% endif %}
+      </section>
+
+      <section class="dashboard-panel">
+        <h2>Expenses by category</h2>
+        {% if category_rows %}
+          <ul class="legend-list">
+            {% for item in category_rows %}
+              <li class="legend-item no-color">
+                <span class="legend-main">
+                  <a href="{{ item.url }}">{{ item.label }}</a>
+                  <br>{{ item.count }} payment(s)
+                </span>
+                <span class="legend-value">{{ item.amount_display }}<br>{{ item.percentage }}%</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="empty">No category expense in the period.</p>
+        {% endif %}
+      </section>
+    </div>
+
+    <section class="dashboard-panel">
+      <div class="section-heading-row">
+        <h2>Monthly trend</h2>
+        <div class="year-nav" aria-label="Year navigation">
+          <a class="button compact-button" href="{{ previous_year_url }}">← {{ monthly_evolution_year|add:"-1" }}</a>
+          <span>{{ monthly_evolution_year }}</span>
+          <a class="button compact-button" href="{{ next_year_url }}">{{ monthly_evolution_year|add:"1" }} →</a>
+        </div>
+      </div>
+      <p class="help">Year {{ monthly_evolution_year }} by due/accrual date. Pending amounts are shown separately and do not compose realized spend.</p>
+      <ul class="monthly-bars">
+        {% for item in monthly_evolution %}
+          <li class="monthly-row">
+            <a href="{{ item.url }}"><strong>{{ item.label }}</strong></a>
+            <div class="progress-track" aria-label="Spend for {{ item.label }}">
+              <div class="progress-bar" style="width: {{ item.bar_width }}%;"></div>
+            </div>
+            <span class="monthly-value">
+              <strong>{{ item.realized_amount_display }}</strong><br>
+              <span class="help">Reconciled {{ item.reconciled_amount_display }} · Pending {{ item.pending_amount_display }} · {{ item.payments_count }} payment(s)</span>
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+      <div class="table-scroll">
+        <table class="monthly-table" aria-label="Monthly spend trend">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Realized</th>
+              <th>Reconciled</th>
+              <th>Pending</th>
+              <th>Payments</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in monthly_evolution %}
+              <tr>
+                <td>{{ item.label }}</td>
+                <td class="money-cell">{{ item.realized_amount_display }}</td>
+                <td class="money-cell">{{ item.reconciled_amount_display }}</td>
+                <td class="money-cell">{{ item.pending_amount_display }}</td>
+                <td class="numeric-cell">{{ item.payments_count }}</td>
+                <td><a class="button" href="{{ item.url }}">Open</a></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <h2>Projects: budget x spend</h2>
+  {% if work_budget_rows %}
+    <div class="table-scroll">
+      <table class="dashboard-table work-budget-table" aria-label="Projects, budget, and spend">
+        <thead>
+          <tr>
+            <th class="text-cell">Project</th>
+            <th class="money-cell">Monthly spend</th>
+            <th class="money-cell">Accumulated spend</th>
+            <th class="money-cell">Pending this month</th>
+            <th class="money-cell">Budget</th>
+            <th class="numeric-cell">Consumed</th>
+            <th class="money-cell">Estimated balance</th>
+            <th class="numeric-cell">Payments</th>
+            <th class="status-cell">Status</th>
+            <th class="actions-cell">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in work_budget_rows %}
+            {% with work=row.item %}
+            <tr>
+              <td class="text-cell">{{ work.work_name }}</td>
+              <td class="money-cell">{{ row.monthly_spent_display }}</td>
+              <td class="money-cell">{{ row.accumulated_spent_display }}</td>
+              <td class="money-cell">
+                {% if work.pending_count %}
+                  {{ row.pending_amount_display }}<br>
+                  <span class="badge warning">{{ work.pending_count }} pending(s)</span>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="money-cell">
+                {% if work.has_budget %}
+                  {{ row.budget_total_display }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="numeric-cell">
+                {% if work.consumed_percentage is not None %}
+                  {{ work.consumed_percentage|floatformat:1 }}%
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="money-cell">
+                {% if work.estimated_balance is not None %}
+                  {{ row.estimated_balance_display }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="numeric-cell">{{ work.payments_count }}</td>
+              <td class="status-cell">
+                {% if work.status == "sem_orcamento" %}
+                  <span class="badge warning" title="Project has spend, but no imported budget">No budget</span>
+                {% elif work.status == "acima_orcamento" %}
+                  <span class="badge danger" title="Accumulated spend above imported budget">Over</span>
+                {% elif work.status == "atencao" %}
+                  <span class="badge warning" title="Consumo alto em relaction ao budget">Attention</span>
+                {% else %}
+                  <span class="badge ok" title="Within imported budget">On budget</span>
+                {% endif %}
+              </td>
+              <td class="actions-cell">
+                <div class="inline-actions">
+                  <a class="button" href="{{ row.payments_url }}">View payments</a>
+                  {% if work.status == "sem_orcamento" %}
+                    <a class="button" href="{{ row.budget_import_url }}">Import budget</a>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No project with spend or budget found.</p>
+  {% endif %}
+
+  <h2>Operational pending items</h2>
+  {% if operational_pendencies %}
+    <div class="table-scroll">
+      <table class="dashboard-table" aria-label="Operational pending items">
+        <thead>
+          <tr>
+            <th class="text-cell">Pending item</th>
+            <th class="numeric-cell">Qty.</th>
+            <th class="money-cell">Amount</th>
+            <th>Detail</th>
+            <th class="actions-cell">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in operational_pendencies %}
+            <tr>
+              <td class="text-cell">{{ item.label }}</td>
+              <td class="numeric-cell">{{ item.count }}</td>
+              <td class="money-cell">{{ item.amount }}</td>
+              <td>{{ item.detail }}</td>
+              <td class="actions-cell"><a class="button" href="{{ item.url }}">{{ item.action_label }}</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No main operational pending item for the period.</p>
+  {% endif %}
+
+  <div class="actions">
+    <a class="button" href="{% url 'internal_monthly_closing' %}?mes={{ selected_month }}&ano={{ selected_year }}">Open fechamento</a>
+    <a class="button" href="{{ period_payments_url }}">View period payments</a>
+    <a class="button" href="{{ pending_payments_url }}">View pending items</a>
+    <a class="button" href="{{ active_drafts_url }}">Active drafts</a>
+    <a class="button" href="{{ pending_ofx_url }}">Open OFX pending</a>
+  </div>
+{% endblock %}

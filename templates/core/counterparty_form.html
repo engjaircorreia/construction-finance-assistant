@@ -1,0 +1,29 @@
+{% extends "core/base.html" %}
+
+{% block title %}New vendor/worker{% endblock %}
+
+{% block content %}
+  <h1>New vendor/worker</h1>
+
+  <form class="form-grid" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next_url }}">
+
+    {% if form.non_field_errors %}
+      <div class="notice danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    {% for field in form %}
+      <label{% if field.name == "notes" %} class="span-2"{% endif %}>
+        {{ field.label }}
+        {{ field }}
+        {% for error in field.errors %}<span class="error">{{ error }}</span>{% endfor %}
+      </label>
+    {% endfor %}
+
+    <div class="form-actions span-2">
+      <button class="primary" type="submit">Save record</button>
+      <a class="button" href="{{ next_url }}">Back</a>
+    </div>
+  </form>
+{% endblock %}

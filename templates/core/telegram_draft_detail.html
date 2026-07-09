@@ -1,0 +1,150 @@
+{% extends "core/base.html" %}
+
+{% block title %}Draft {{ draft.pk }}{% endblock %}
+
+{% block content %}
+  <h1>Draft #{{ draft.pk }}</h1>
+
+  <div class="tabs">
+    <a href="{% url 'internal_pending_payments' %}">Payments</a>
+    <a class="active" href="{% url 'internal_telegram_drafts' %}">Drafts</a>
+  </div>
+
+  <div class="actions">
+    {% if can_edit %}
+      <a class="button primary-link" href="{% url 'internal_telegram_draft_update' draft.pk %}">Edit draft</a>
+      <form method="post" action="{% url 'internal_telegram_draft_finalize' draft.pk %}">
+        {% csrf_token %}
+        <button class="primary" type="submit">Finalize</button>
+      </form>
+      <form method="post" action="{% url 'internal_telegram_draft_cancel' draft.pk %}">
+        {% csrf_token %}
+        <button class="danger" type="submit">Cancel</button>
+      </form>
+    {% endif %}
+    <a class="button" href="{% url 'internal_telegram_drafts' %}">Back</a>
+  </div>
+
+  <h2>Main data</h2>
+  <dl>
+    <dt>Status</dt><dd>{{ draft.get_status_display }}</dd>
+    <dt>Created at</dt><dd>{{ draft.created_at|date:"d/m/Y H:i" }}</dd>
+    <dt>Updated at</dt><dd>{{ draft.updated_at|date:"d/m/Y H:i" }}</dd>
+    <dt>Telegram</dt><dd>{{ draft.sender_name|default:"-" }} | {{ draft.telegram_user_id }}{% if draft.sender_username %} | @{{ draft.sender_username }}{% endif %}</dd>
+    <dt>Date</dt><dd>{{ draft.payment_date|date:"d/m/Y"|default:"-" }}</dd>
+    <dt>Amount</dt><dd>{% if draft.amount is not None %}R$ {{ draft.amount }}{% else %}-{% endif %}</dd>
+    <dt>Vendor/Worker</dt><dd>{{ draft.counterparty_display|default:"-" }}</dd>
+    <dt>Suggested CPF/CNPJ</dt><dd>{{ draft.counterparty_candidate_document|default:"-" }}</dd>
+    <dt>Category</dt><dd>{{ draft.category.name|default:"-" }}</dd>
+    <dt>Payment method</dt><dd>{{ draft.payment_method|default:"-" }}</dd>
+    <dt>Cost center</dt><dd>{{ draft.cost_center.name|default:"-" }}</dd>
+    <dt>Project</dt><dd>{{ draft.work_display|default:"-" }}</dd>
+    <dt>Budget item index</dt><dd>{{ draft.work_item_index|default:"-" }}</dd>
+    <dt>Description</dt><dd>{{ draft.description|default:"-" }}</dd>
+    <dt>Payment finalized</dt>
+    <dd>
+      {% if draft.finalized_payment %}
+        <a href="{% url 'internal_payment_detail' draft.finalized_payment.pk %}">#{{ draft.finalized_payment.pk }}</a>
+      {% else %}
+        -
+      {% endif %}
+    </dd>
+  </dl>
+
+  <h2>Counterparty suggestion</h2>
+  {% if draft.counterparty or draft.counterparty_candidate_name %}
+    <dl>
+      <dt>Name</dt><dd>{{ draft.counterparty_display|default:"-" }}</dd>
+      <dt>CPF/CNPJ</dt><dd>{{ draft.counterparty.primary_document|default:draft.counterparty_candidate_document|default:"-" }}</dd>
+    </dl>
+    {% if can_register_counterparty %}
+      <div class="actions">
+        <a class="button primary-link" href="{{ draft_supplier_create_url }}">Register vendor</a>
+        <a class="button" href="{{ draft_worker_create_url }}">Register worker</a>
+      </div>
+    {% endif %}
+  {% else %}
+    <p class="empty">No counterparty identified.</p>
+  {% endif %}
+
+  <h2>Project suggestion</h2>
+  {% if draft.work or draft.work_candidate_name %}
+    <dl>
+      <dt>Project</dt><dd>{{ draft.work_display|default:"-" }}</dd>
+      <dt>Budget item index</dt><dd>{{ draft.work_item_index|default:"-" }}</dd>
+    </dl>
+    {% if draft.work_without_budget %}
+      <div class="notice warning">
+        Project without imported budget. This warning does not block draft finalization. Keep the budget item index empty until a reliable budget is imported. {{ budget_import_hint }}
+        {% if budget_import_url %}
+          <div class="actions"><a class="button" href="{{ budget_import_url }}">Import budget</a></div>
+        {% endif %}
+      </div>
+    {% endif %}
+    {% if can_register_work %}
+      <div class="actions">
+        <a class="button primary-link" href="{{ draft_work_create_url }}">Register project</a>
+      </div>
+    {% endif %}
+  {% else %}
+    <p class="empty">No project identified.</p>
+  {% endif %}
+
+  <h2>Detected pending items</h2>
+  {% if draft_pendencies %}
+    <ul class="compact-list">
+      {% for pendency in draft_pendencies %}
+        <li>{{ pendency }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">No blocking pending item detected.</p>
+  {% endif %}
+
+  <h2>Payment preview</h2>
+  <pre>{{ payment_preview }}</pre>
+
+  <h2>Accumulated text</h2>
+  {% if draft.text_content %}
+    <pre>{{ draft.text_content }}</pre>
+  {% else %}
+    <p class="empty">No accumulated text.</p>
+  {% endif %}
+
+  <h2>Files and messages</h2>
+  {% if draft.uploaded_files.all %}
+    <div class="table-scroll">
+      <table class="data-table operational-table">
+        <thead>
+          <tr>
+            <th class="datetime-cell">Received at</th>
+            <th class="wide-text-cell">Name</th>
+            <th class="text-cell">Type</th>
+            <th class="text-cell">Source</th>
+            <th class="status-cell">Status</th>
+            <th class="count-cell">Size</th>
+            <th class="text-cell">Telegram</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for uploaded_file in draft.uploaded_files.all %}
+            <tr>
+              <td class="datetime-cell">{{ uploaded_file.created_at|date:"d/m/Y H:i" }}</td>
+              <td class="wide-text-cell">{{ uploaded_file.original_filename }}</td>
+              <td class="text-cell">{{ uploaded_file.get_kind_display }}</td>
+              <td class="text-cell">{{ uploaded_file.get_source_display }}</td>
+              <td class="status-cell"><span class="badge">{{ uploaded_file.get_status_display }}</span></td>
+              <td class="count-cell">{{ uploaded_file.size_bytes|default:"-" }}</td>
+              <td class="text-cell">{{ uploaded_file.telegram_message_id|default:"-" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No linked file or message.</p>
+  {% endif %}
+
+  <h2>Raw payload</h2>
+  <pre>{{ raw_payload_json }}</pre>
+{% endblock %}

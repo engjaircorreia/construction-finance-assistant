@@ -1,0 +1,71 @@
+services:
+  web:
+    build: .
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120
+    env_file:
+      - .env
+    volumes:
+      - app_storage:/app/storage
+      - staticfiles:/app/staticfiles
+    ports:
+      - "127.0.0.1:${APP_HOST_PORT:-8010}:8000"
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: celery -A config worker --loglevel=info
+    env_file:
+      - .env
+    volumes:
+      - app_storage:/app/storage
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  beat:
+    build: .
+    command: celery -A config beat --loglevel=info
+    env_file:
+      - .env
+    volumes:
+      - app_storage:/app/storage
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  bot:
+    build: .
+    command: python manage.py run_telegram_bot
+    env_file:
+      - .env
+    volumes:
+      - app_storage:/app/storage
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  app_storage:
+  staticfiles:

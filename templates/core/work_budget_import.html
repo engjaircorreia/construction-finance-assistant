@@ -1,0 +1,117 @@
+{% extends "core/base.html" %}
+
+{% block title %}Import budget{% endblock %}
+
+{% block content %}
+  <h1>Import budget</h1>
+  <p class="muted">Project: {{ work.name }}</p>
+
+  <form class="form-grid" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="notice danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    {% for field in form %}
+      <label>
+        {{ field.label }}
+        {{ field }}
+        {% for error in field.errors %}<span class="error">{{ error }}</span>{% endfor %}
+      </label>
+    {% endfor %}
+
+    <div class="form-actions span-2">
+      <button class="primary" type="submit">Import budget</button>
+      <a class="button" href="{% url 'internal_monthly_closing' %}">Back</a>
+    </div>
+  </form>
+
+  {% if batch %}
+    <h2>Import report</h2>
+    <div class="summary-grid">
+      <div class="metric">
+        <span>Items created</span>
+        <strong>{{ batch.items_created }}</strong>
+      </div>
+      <div class="metric">
+        <span>Items updated</span>
+        <strong>{{ batch.items_updated }}</strong>
+      </div>
+      <div class="metric">
+        <span>Items skipped</span>
+        <strong>{{ batch.rows_skipped }}</strong>
+      </div>
+      <div class="metric">
+        <span>Unchanged</span>
+        <strong>{{ batch.items_unchanged }}</strong>
+      </div>
+      <div class="metric">
+        <span>Conflicts</span>
+        <strong>{{ batch.conflicts|length }}</strong>
+      </div>
+    </div>
+
+    {% if batch.conflicts %}
+      <h2>Conflicts</h2>
+      <div class="table-scroll">
+        <table class="data-table operational-table">
+          <thead>
+            <tr>
+              <th class="count-cell">Row</th>
+              <th class="wide-text-cell">Name</th>
+              <th class="text-cell">Reason</th>
+              <th class="wide-text-cell">Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for conflict in batch.conflicts %}
+              <tr>
+                <td class="count-cell">{{ conflict.row_number }}</td>
+                <td class="wide-text-cell">{{ conflict.name|default:"-" }}</td>
+                <td class="text-cell">{{ conflict.reason }}</td>
+                <td class="wide-text-cell">{{ conflict.detail }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  {% endif %}
+
+  <h2>Recent imports</h2>
+  {% if recent_batches %}
+    <div class="table-scroll">
+      <table class="data-table operational-table">
+        <thead>
+          <tr>
+            <th class="datetime-cell">Date</th>
+            <th class="wide-text-cell">File</th>
+            <th class="status-cell">Status</th>
+            <th class="count-cell">Criados</th>
+            <th class="count-cell">Atualizados</th>
+            <th class="count-cell">Ignoreds</th>
+            <th class="count-cell">Conflicts</th>
+            <th class="text-cell">User</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for recent in recent_batches %}
+            <tr>
+              <td class="datetime-cell">{{ recent.created_at|date:"d/m/Y H:i" }}</td>
+              <td class="wide-text-cell">{{ recent.uploaded_file.original_filename|default:"-" }}</td>
+              <td class="status-cell"><span class="badge">{{ recent.get_status_display }}</span></td>
+              <td class="count-cell">{{ recent.items_created }}</td>
+              <td class="count-cell">{{ recent.items_updated }}</td>
+              <td class="count-cell">{{ recent.rows_skipped }}</td>
+              <td class="count-cell">{{ recent.conflicts|length }}</td>
+              <td class="text-cell">{{ recent.uploaded_by.username|default:"-" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No import registered for this project.</p>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "core/base.html" %}
+
+{% block title %}Spreadsheets Geradas{% endblock %}
+
+{% block content %}
+  <h1>Generated spreadsheets</h1>
+  <p><a class="button" href="{% url 'internal_monthly_closing' %}">Back to monthly close</a></p>
+  <form class="actions" method="post">
+    {% csrf_token %}
+    <button class="primary" type="submit">Generate spreadsheets</button>
+  </form>
+  {% if batches %}
+    <div class="table-scroll">
+      <table class="data-table operational-table compact-operational-table">
+        <thead>
+          <tr>
+            <th class="datetime-cell">Generated at</th>
+            <th class="text-cell">Period</th>
+            <th class="count-cell">Records</th>
+            <th class="status-cell">Status</th>
+            <th class="wide-text-cell">Summary</th>
+            <th class="action-cell">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for batch in batches %}
+            <tr>
+              <td class="datetime-cell">{{ batch.generated_at|date:"d/m/Y H:i"|default:"-" }}</td>
+              <td class="text-cell">
+                {% if batch.period_start and batch.period_end %}
+                  {{ batch.period_start|date:"d/m/Y" }} to {{ batch.period_end|date:"d/m/Y" }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="count-cell">{{ batch.records_count }}</td>
+              <td class="status-cell"><span class="badge">{{ batch.get_status_display }}</span></td>
+              <td class="wide-text-cell">
+                {{ batch.generated_by.username|default:"-" }}
+                {% if batch.error_message %}
+                  <br><span class="badge danger">{{ batch.error_message|truncatechars:80 }}</span>
+                {% endif %}
+              </td>
+              <td class="action-cell">
+                <details class="actions-menu">
+                  <summary aria-label="Actions">...</summary>
+                  <div class="actions-menu-panel">
+                    {% if batch.accounting_file %}
+                      <a class="button compact-button" href="{% url 'internal_export_download_kind' batch.pk 'exportacao' %}">Export contador</a>
+                    {% endif %}
+                    {% if batch.import_file or batch.file %}
+                      <a class="button compact-button" href="{% url 'internal_export_download_kind' batch.pk 'importacao' %}">Import sistema</a>
+                    {% endif %}
+                    {% if not batch.accounting_file and not batch.import_file and not batch.file %}
+                      <span class="help">Sem file</span>
+                    {% endif %}
+                  </div>
+                </details>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty">No generated spreadsheet.</p>
+  {% endif %}
+{% endblock %}

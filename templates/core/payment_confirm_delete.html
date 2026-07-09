@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+
+{% block title %}Delete payment {{ payment.pk }}{% endblock %}
+
+{% block content %}
+  <h1>Delete payment {{ payment.pk }}</h1>
+
+  <div class="notice danger">
+    This action removes the payment from the system. Use it only for records created by mistake and not yet approved,
+    exported or reconciled.
+  </div>
+
+  <dl>
+    <dt>Date</dt><dd>{{ payment.payment_date|date:"d/m/Y"|default:"-" }}</dd>
+    <dt>Amount</dt><dd>R$ {{ payment.amount }}</dd>
+    <dt>Vendor/Worker</dt><dd>{{ payment.counterparty.name|default:"-" }}</dd>
+    <dt>Description</dt><dd>{{ payment.description|default:"-" }}</dd>
+    <dt>Status</dt><dd>{{ payment.get_status_display }}</dd>
+  </dl>
+
+  <form class="actions" method="post">
+    {% csrf_token %}
+    {% if next_url %}
+      <input type="hidden" name="next" value="{{ next_url }}">
+    {% endif %}
+    <button class="danger" type="submit">Delete definitivamente</button>
+    {% if next_url %}
+      <a class="button" href="{{ next_url }}">Back</a>
+    {% else %}
+      <a class="button" href="{% url 'internal_payment_detail' payment.pk %}">Back</a>
+    {% endif %}
+  </form>
+{% endblock %}
